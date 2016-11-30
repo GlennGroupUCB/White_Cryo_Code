@@ -22,21 +22,31 @@ ag49 = rm.open_resource('GPIB0::3::INSTR') #power supply 3649 in the upper RH of
 ag49.write('OUTPut ON')# this must be the 4K heater
 #ag47b.write('OUTPut ON')#pump heat switches 
 #ag47t.write('OUTPut ON')#these are the pump heaters
-
-ag49.write('INST:SEL OUT1')
-ag49.write('Volt 1')
+print("waiting")
+time.sleep(90*60) #wait for time in seconds Let wait for 30mins between
+ag49.write('INST:SEL OUT2')
+ag49.write('Volt 0.6')
 time.sleep(30*60) #wait for time in seconds Let wait for 30mins between
-ag49.write('INST:SEL OUT1')
-ag49.write('Volt 2')
+ag49.write('INST:SEL OUT2')
+ag49.write('Volt 0')
 time.sleep(30*60) #wait for time in seconds Let wait for 30mins between
-ag49.write('INST:SEL OUT1')
-ag49.write('Volt 3')
+ag49.write('INST:SEL OUT2')
+ag49.write('Volt 0.6')
+time.sleep(15*60) #wait for time in seconds Let wait for 30mins between
+ag49.write('INST:SEL OUT2')
+ag49.write('Volt 0.4')
 time.sleep(30*60) #wait for time in seconds Let wait for 30mins between
-ag49.write('INST:SEL OUT1')
-ag49.write('Volt 3.5')
+ag49.write('INST:SEL OUT2')
+ag49.write('Volt 0.3')
 time.sleep(30*60) #wait for time in seconds Let wait for 30mins between
-ag49.write('INST:SEL OUT1')
-ag49.write('Volt 4')
+a49.write('INST:SEL OUT2')
+ag49.write('Volt 0.2')
+time.sleep(30*60) #wait for time in seconds Let wait for 30mins between
+a49.write('INST:SEL OUT2')
+ag49.write('Volt 0.1')
+time.sleep(30*60) #wait for time in seconds Let wait for 30mins between
+a49.write('INST:SEL OUT2')
+ag49.write('Volt 0.0')
 time.sleep(30*60) #wait for time in seconds Let wait for 30mins between
 
 

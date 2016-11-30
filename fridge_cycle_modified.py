@@ -17,8 +17,8 @@ from scipy import interpolate
 
 
 
-#RX202_lookup = np.loadtxt('RX-202A Mean Curve.tbl')#ADR
-RX202_lookup = np.loadtxt('RX-102A Mean Curve.tbl')# 300mK and 1K stages
+RX202_lookup = np.loadtxt('RX-202A Mean Curve.tbl')#ADR
+#RX202_lookup = np.loadtxt('RX-102A Mean Curve.tbl')# 300mK and 1K stages
 RX202_interp = interpolate.interp1d(RX202_lookup[:,1], RX202_lookup[:,0],fill_value = 0.,bounds_error = False)
 #test = np.float(RX202_interp(4000))
 #RX202_temps = RX202_interp(-linear_bridge*1000)
@@ -116,8 +116,11 @@ try: #allows you to kill the loop with ctrl c
 		if i == 0: # there is some weirdness where the first call returns an empty string
 			lr750_a_temp = -1
 		if i != 0:
-			lr750_a_num = np.float(lr750_a[0:8])
-			y[419,15] = lr750_a_temp = RX202_interp(-lr750_a_num*1000)
+			try:
+				lr750_a_num = np.float(lr750_a[0:8])
+				y[419,15] = lr750_a_temp = RX202_interp(-lr750_a_num*1000)
+			except:
+				y[419,15] = lr750_a_temp = -1.
 		
 		k = 0
 		for j in plots:

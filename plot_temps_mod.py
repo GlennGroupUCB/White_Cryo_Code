@@ -7,11 +7,12 @@ import sys
 # program to let you plot historical temperature data
 # written by Jordan Wheeler 
 # date: 11/17/2016
+#modified by Adalyn Fyhrie 11/28/2016 to only plot relevant temps
 # the sytax for using this is python plot_temps.py "filename" 
 
 lines = ['-','--','-.']
-labels = ['4K P.T','50K HTS','50K P.T.','50K plate','ADR rad shield','4He pump','3He pump','4He switch','3He switch','ADR switch','4K-1K switch','4K plate','3He head','4He head','4K HTS','ADR',"head ADR switch"]
-plots = (0,1,2,3,5,6,7,8,9,10,11,12,13,14,15,16) #ADR rad shield thermometer sucks
+labels = ['4K P.T','50K P.T.','4He pump','3He pump','4He switch','3He switch','ADR switch','4K-1K switch','3He head','4He head','ADR',"head ADR switch"]
+plots = (0,2,5,6,7,8,9,10,12,13,15,16)
 linear = 0
 
 
@@ -50,7 +51,7 @@ if __name__=='__main__':
 			if linear ==0:
 				plt.yscale('log')
 				plt.ylim(.1,1000)
-				plt.legend(ncol = 5,loc =1)
+				plt.legend(ncol = 5,loc =3)
 			else:
 				plt.legend(ncol = 5,loc =1)
 			plt.xlabel("time (mins)")
@@ -81,7 +82,7 @@ if __name__=='__main__':
 			if linear == 0:
 				plt.yscale('log')
 				plt.ylim(.1,1000)
-				plt.legend(ncol = 5,loc =1)
+				plt.legend(ncol = 5,loc =3)
 			else:
 				plt.legend(ncol = 5,loc =1)
 			plt.xlabel("time (mins)")

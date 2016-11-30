@@ -23,8 +23,8 @@ from scipy import interpolate
 
 
 
-#RX202_lookup = np.loadtxt('RX-202A Mean Curve.tbl')#ADR
-RX202_lookup = np.loadtxt('RX-102A Mean Curve.tbl')# 300mK and 1K stages
+RX202_lookup = np.loadtxt('RX-202A Mean Curve.tbl')#ADR
+#RX202_lookup = np.loadtxt('RX-102A Mean Curve.tbl')# 300mK and 1K stages
 RX202_interp = interpolate.interp1d(RX202_lookup[:,1], RX202_lookup[:,0],fill_value = 0.,bounds_error = False)
 #test = np.float(RX202_interp(4000))
 #RX202_temps = RX202_interp(-linear_bridge*1000)
