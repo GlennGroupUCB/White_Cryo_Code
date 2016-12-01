@@ -12,6 +12,9 @@ import sys
 # which will set the helium 4 pump to 1 V
 # should up date to have some voltage limits so that we don't over heat things
 
+#Change log
+#12/1/16 -Jordan -Added output on before trying to change voltage
+
 
 
 if __name__=='__main__':
@@ -25,6 +28,7 @@ if __name__=='__main__':
 		rm = visa.ResourceManager()
 		if target == 'He4 pump':
 			ag47t = rm.open_resource('GPIB0::15::INSTR') #power supply 3647 on top row of rack
+			ag47t.write("OUTput ON")
 			ag47t.write('INST:SEL OUT1')#Helium 4 pump
 			ag47t.write('Volt ' +str(voltage))
 			print('You have tuned on the Helium 4 pump to ' + str(voltage) + ' V')
@@ -33,30 +37,35 @@ if __name__=='__main__':
 			sys.exit()  
 		elif target == 'He3 pump':
 			ag47t = rm.open_resource('GPIB0::15::INSTR') #power supply 3647 on top row of rack
+			ag47t.write("OUTput ON")
 			ag47t.write('INST:SEL OUT2')
 			ag47t.write('Volt ' +str(voltage))
 			print('You have tuned on the Helium 3 pump to ' + str(voltage) + ' V')
 			sys.exit()
 		elif target == 'He4 switch':
 			ag47b = rm.open_resource('GPIB0::5::INSTR') #power supply 3647 on bottom row of power supplies
+			ag47b.write("OUTput ON")
 			ag47b.write('INST:SEL OUT1')
 			ag47b.write('Volt ' +str(voltage))
 			print('You have tuned on the Helium 4 switch to ' + str(voltage) + ' V')
 			sys.exit()
 		elif target == 'He3 switch':
 			ag47b = rm.open_resource('GPIB0::5::INSTR') #power supply 3647 on bottom row of power supplies
+			ag47b.write("OUTput ON")
 			ag47b.write('INST:SEL OUT2')
 			ag47b.write('Volt ' +str(voltage))
 			print('You have tuned on the Helium 3 switch to ' + str(voltage) + ' V')
 			sys.exit()
 		elif target == 'ADR switch':
 			ag49 = rm.open_resource('GPIB0::3::INSTR') #power supply 3649 in the upper RH of Rack
+			ag49.write("OUTput ON")
 			ag49.write('INST:SEL OUT1')
 			ag49.write('Volt ' +str(voltage))
 			print('You have tuned on the ADR switch to ' + str(voltage) + ' V')
 			sys.exit()
 		elif target == '4K 1K switch':
 			ag49 = rm.open_resource('GPIB0::3::INSTR') #power supply 3649 in the upper RH of Rack
+			ag49.write("OUTput ON")
 			ag49.write('INST:SEL OUT2')
 			ag49.write('Volt ' +str(voltage))
 			print('You have tuned on the 4K - 1K to ' + str(voltage) + ' V')
