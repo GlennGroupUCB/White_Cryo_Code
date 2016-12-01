@@ -66,7 +66,7 @@ if __name__=='__main__':
 			for j in range(1,len(filenames)):
               
 				data2 = np.loadtxt(filenames[j], delimiter = ' ',skiprows = 1,usecols = range(2,20))
-				data2[:,0] = data2[:,0] +data[data.shape[0]-2,0]
+				data2[:,0] = data2[:,0] +data[data.shape[0]-2,0] -data2[0,0]
 				data = np.vstack((data,data2))
 				
 
