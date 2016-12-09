@@ -9,8 +9,20 @@ import datetime
 import os
 import smtplib
 from scipy import interpolate
+from read_power_supplies import read_power_supplies
+import matplotlib.gridspec as gridspec
 
-# to Add a new thermoeter change the call for y line ~41 and the labels and the plots and the print funcitons at the very end
+#Program to monitor the temperatures of the cyrostat
+#written by Jordan at some date lost in time. 
+
+#Change log
+#12/9/16 - Jordan - Added reading and ploting of the voltage and currents of the power supplies.
+
+#To Do 
+# need to modularize the reading of the temperatures to something like the reading of the power supplies. 
+#that way if we edit the thermometry it will change for both this program and the fridge cycle program
+#
+#Need to add printing of the voltages and current to the file as well
 
 RX202_lookup = np.loadtxt('RX-202A Mean Curve.tbl')#202 ADR sensor
 #RX202_lookup = np.loadtxt('RX-102A Mean Curve.tbl') #102 300mK/ 1K sensors
@@ -22,6 +34,7 @@ lines = ['-','--','-.']
 labels = ['4K P.T.               ','50K HTS            ','50K P.T.             ','50K plate          ','ADR rad shield','4He pump         ','3He pump         ','4He switch        ','3He switch        ','ADR switch        ','4K-1K switch      ','4K plate             ','3He head           ','4He head           ','4K HTS               ','ADR                    ','Head ADR switch']
 colors = ['b','g','r','c','m','y','k']
 
+#allows you to not plot ugly thermometers
 plots = (0,1,2,3,5,6,7,8,9,10,11,12,13,14,15,16)
 
 
@@ -35,15 +48,19 @@ date_str = str(now)[0:10]
 file_prefix =  "C:/Users/tycho/Desktop/White_Cryo_Code/Temps/" + date_str
 file_suffix = ''
 
-plt.figure(1,figsize = (19,10))
+plt.figure(1,figsize = (21,11))
 ax = plt.gca()
 x = np.arange(-420,0)*1.
 print(x[0],x[419])
 y = np.ones((420,17))*-1
+volt_y = np.zeros((420,6))
+curr_y = np.zeros((420,6))
+
 plt.title("Thermometry")
 plt.xlabel("time (mins)")
 plt.ylabel("Temperature (K)")
 plt.ion()
+gs = gridspec.GridSpec(3,3)#allows for custome subplot layout
 plt.show()
 
 
@@ -83,8 +100,9 @@ try: #allows you to kill the loop with ctrl c
 		x = np.roll(x,-1)
 		x[419] = t/60.
 		y = np.roll(y,-1,axis = 0)
-		plt.xlim(x[0],x[419])
-		plt.ylim(0.1,300)
+		volt_y = np.roll(volt_y,-1,axis = 0)
+		curr_y = np.roll(curr_y,-1,axis = 0)
+
 			
 		y[419,0] = lk218_T1 = float(lk218.query('KRDG?1'))
 		#print(y[419,0],lk218_T1)
@@ -118,6 +136,8 @@ try: #allows you to kill the loop with ctrl c
 				y[419,15] = lr750_a_temp = -1.
 		
 		k = 0
+		
+		plt.subplot(gs[0:2,:])
 		for j in plots:
 			#print(y[419,j])
 			plt.semilogy(x,y[:,j],color = colors[np.mod(j,7)],linestyle = lines[j/7],linewidth = 2, label = labels[j]+" " +str(y[419,j])[0:5]+"K")
@@ -126,6 +146,31 @@ try: #allows you to kill the loop with ctrl c
 			k = k+1
 		if i == 0:					
 			legend = plt.legend(ncol = 1,loc =2)
+		plt.xlim(x[0],x[419])
+		plt.ylim(0.1,300)
+		
+		#grab voltages and current from power supplies
+		power_labels, volt, curr = read_power_supplies()
+		volt_y[419,:]= volt
+		curr_y[419,:]= curr
+			
+		# plot the power levels	
+		plt.subplot(gs[2,:])
+		k = 0
+		for j in range(0,len(volt)):
+			plt.plot(x,volt_y[:,j],color = colors[np.mod(j,7)],linestyle = lines[j/7],linewidth = 2, label = power_labels[j]+ " " +str(volt_y[419,j])[0:4]+"V " + str(curr_y[419,j])[0:6]+"A")
+			if i != 0:
+				legend_power.get_texts()[k].set_text(power_labels[j]+" " +str(volt_y[419,j])[0:4]+"V "+ str(curr_y[419,j])[0:6]+"A")
+			k = k+1
+		if i ==0:
+			legend_power= plt.legend(ncol = 1,loc = 2)		
+		plt.xlim(x[0],x[419])
+		plt.ylim(0,30)
+		
+		
+		
+			
+		
 		plt.draw()
 		plt.pause(sleep_interval)
 		
