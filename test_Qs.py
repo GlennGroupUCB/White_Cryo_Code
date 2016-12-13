@@ -23,31 +23,33 @@ ag49.write('OUTPut ON')# this must be the 4K heater
 #ag47b.write('OUTPut ON')#pump heat switches 
 #ag47t.write('OUTPut ON')#these are the pump heaters
 print("waiting")
-time.sleep(30*60) #wait for time in seconds Let wait for 30mins between
+time.sleep(130*60) #wait for time in seconds Let wait for 30mins between
 ag49.write('INST:SEL OUT2')
-ag49.write('Volt 0.6')
+ag49.write('Volt 0.')
 time.sleep(60*60) #wait for time in seconds Let wait for 30mins between
 ag49.write('INST:SEL OUT2')
-ag49.write('Volt 0.5')
+ag49.write('Volt 0.')
+time.sleep(60*60) #wait for time in seconds Let wait for 30mins between
+ag49.write('INST:SEL OUT2')
+ag49.write('Volt 0')
 time.sleep(60*60) #wait for time in seconds Let wait for 30mins between
 ag49.write('INST:SEL OUT2')
 ag49.write('Volt 0.4')
 time.sleep(60*60) #wait for time in seconds Let wait for 30mins between
 ag49.write('INST:SEL OUT2')
-ag49.write('Volt 0.3')
+ag49.write('Volt 0.2')
+time.sleep(60*60) #wait for time in seconds Let wait for 30mins between
+ag49.write('INST:SEL OUT2')
+ag49.write('Volt 0.0')
+time.sleep(60*60) #wait for time in seconds Let wait for 30mins between
+ag49.write('INST:SEL OUT2')
+ag49.write('Volt 0.4')
 time.sleep(60*60) #wait for time in seconds Let wait for 30mins between
 ag49.write('INST:SEL OUT2')
 ag49.write('Volt 0.2')
 time.sleep(60*60) #wait for time in seconds Let wait for 30mins between
 ag49.write('INST:SEL OUT2')
-ag49.write('Volt 0.1')
-time.sleep(60*60) #wait for time in seconds Let wait for 30mins between
-ag49.write('INST:SEL OUT2')
 ag49.write('Volt 0.0')
-time.sleep(60*60) #wait for time in seconds Let wait for 30mins between
-#ag49.write('INST:SEL OUT2')
-#ag49.write('Volt 0.0')
-#time.sleep(30*60) #wait for time in seconds Let wait for 30mins between
 
 
 #ag47b.write('INST:SEL OUT2')
