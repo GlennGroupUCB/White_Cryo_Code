@@ -20,6 +20,9 @@ from scipy import interpolate
 
 #last time I ran this from start it didn't turn on the pumps. Then I reset the program and it worked fine?
 
+#Change log
+#1/11/2016 -Jordan - Added in turning on ADR switch after it gets cold
+
 
 
 
@@ -110,8 +113,8 @@ try: #allows you to kill the loop with ctrl c
 		y[419,5] = lk224_TC2 = float(lk224.query('KRDG? C2'))
 		y[419,6] = lk224_TC3 = float(lk224.query('KRDG? C3'))
 		y[419,7] = lk224_TC4 = float(lk224.query('KRDG? C4'))
-		y[419,8] = lk224_TC5 = float(lk224.query('KRDG? C5'))
-		y[419,9] = lk224_TD2 = float(lk224.query('KRDG? D2'))
+		y[419,8] = lk224_TC5 = float(lk224.query('KRDG? C5')) 
+		y[419,9] = lk224_TD2 = float(lk224.query('KRDG? D2')) #ADR switch
 		y[419,10] = lk224_TD3 = float(lk224.query('KRDG? D3'))
 		y[419,11] = lk224_TD5 = float(lk224.query('KRDG? D5'))
 		
@@ -222,6 +225,20 @@ try: #allows you to kill the loop with ctrl c
 		else:
 			ag47t.write('INST:SEL OUT2')
 			ag47t.write('Volt 0')
+		
+		# turn on the ADR switch when it gets to cold to conduct
+		if lk224_TD2<26.:
+			ag49.write('INST:SEL OUT1')
+			ag49.write('Volt 3.5')#3.5
+		if lk224_TD2>30.: #temp should drop slowly
+			ag49.write('INST:SEL OUT1')
+			ag49.write('Volt 2.5')#2.5
+		if lk224_TD2>35.: #just in case
+			ag49.write('INST:SEL OUT1')
+			ag49.write('Volt 0')
+			
+			
+		
 			
 		
 	f.close() #close the file
