@@ -37,12 +37,14 @@ colors = ['b','g','r','c','m','y','k']
 #allows you to not plot ugly thermometers
 plots = (0,1,2,3,5,6,7,8,9,10,11,12,13,14,15,16)
 
+# turn on alarm on for certain values
+#                     4K P.T--50K HTS--50K P.T.--50K plate--ADR rad shield'--4He pump--3He pump--4He switch--3He switch--ADR switch--4K-1K switch--4K plate--3He head--4He head--4K HTS--ADR--Head ADR switch
+Alarm_on = np.array((    0,     1,       0,         0,           0,             0,       0,        0,           0,          0,         0,             1,         0,       0,       1,    0,      0         ))
+Alarm_value =np.array((  0,     60.,     0,         0,           0,             0,       0,        0,           0,          0,         0,             5.,        0,       0,       8.,   0,      0         ))
 
 sleep_interval = 60. #seconds
-Alarm = 0 # 0 for off 1 for on
-Alarm_base = np.zeros((10,15))
-Alarm_test = np.zeros(15)
-Alarm_threshold = 2.
+Alarm = 1 # 0 for off 1 for on
+
 now = datetime.datetime.now()
 date_str = str(now)[0:10]
 file_prefix =  "C:/Users/tycho/Desktop/White_Cryo_Code/Temps/" + date_str
@@ -62,8 +64,6 @@ plt.ylabel("Temperature (K)")
 plt.ion()
 gs = gridspec.GridSpec(3,3)#allows for custome subplot layout
 plt.show()
-
-
 
 
 #create a resourcemanager and see what instruments the computer can talk to
@@ -166,71 +166,42 @@ try: #allows you to kill the loop with ctrl c
 			legend_power= plt.legend(ncol = 1,loc = 2)		
 		plt.xlim(x[0],x[419])
 		plt.ylim(0,30)
-		
-		
-		
 			
-		
 		plt.draw()
-		plt.pause(sleep_interval)
+
 		
 		if Alarm != 0:
-			if i < 10: # get a base reading for the allarm
-				Alarm_base[i,0] = lk218_T1
-				Alarm_base[i,1] = lk218_T3
-				Alarm_base[i,2] = lk218_T5
-				Alarm_base[i,3] = lk218_T6
-				Alarm_base[i,4] = lk218_T8
-				Alarm_base[i,5] = lk224_TC2
-				Alarm_base[i,6] = lk224_TC3
-				Alarm_base[i,7] = lk224_TC4
-				Alarm_base[i,8] = lk224_TC5
-				Alarm_base[i,9] = lk224_TD2
-				Alarm_base[i,10] = lk224_TD3
-				Alarm_base[i,11] = lk224_TD5
-				Alarm_base[i,12] = lk224_A
-				Alarm_base[i,13] = lk224_B
-				Alarm_base[i,14] = lk218_T2
-			if i > 10: #trigger the alarm if the temps execeed the threshold
-				Alarm_test[0] = lk218_T1
-				Alarm_test[1] = lk218_T3
-				Alarm_test[2] = lk218_T5
-				Alarm_test[3] = lk218_T6
-				Alarm_test[4] = lk218_T8
-				Alarm_test[5] = lk224_TC2
-				Alarm_test[6] = lk224_TC3
-				Alarm_test[7] = lk224_TC4
-				Alarm_test[8] = lk224_TC5
-				Alarm_test[9] = lk224_TD2
-				Alarm_test[10] = lk224_TD3
-				Alarm_test[11] = lk224_TD5
-				Alarm_test[12] = lk224_A
-				Alarm_test[13] = lk224_B
-				Alarm_test[14] = lk218_T2
-				if (Alarm_test>np.mean(Alarm_base,axis = 0)+Alarm_threshold).any() == True:
-					print("Alarm Alarm")
-					if Alarm == 1:
-						print("first occurance")
-						fromaddr = 'SubmmLab@gmail.com'
-						toaddrs  = '3145741711@txt.att.net'
-						msg = 'The temperature alarm was triggered'
-						username = 'SubmmLab@gmail.com'
-						password = 'ccatfourier'
-						server = smtplib.SMTP_SSL('smtp.gmail.com:465')
-						server.ehlo()
-						#server.starttls()
-						server.login(username,password)
-						server.sendmail(fromaddr, toaddrs, msg)
-						toaddrs  = '3038192582@tmomail.net'
-						server.sendmail(fromaddr, toaddrs, msg)
-						server.quit()	
-					Alarm = 2
+			Alarm_test = y[419,:]*Alarm_on #0 if not on otherwise actual temperature
+			if (Alarm_test>(Alarm_value +.001)).any() == True:
+				print("Alarm Alarm")
+				if Alarm == 1:
+					print("first occurance")
+					fromaddr = 'SubmmLab@gmail.com'
+					toaddrs  = '3145741711@txt.att.net'
+					msg = 'The temperature alarm was triggered'
+					username = 'SubmmLab@gmail.com'
+					password = 'ccatfourier'
+					server = smtplib.SMTP_SSL('smtp.gmail.com:465')
+					server.ehlo()
+					#server.starttls()
+					server.login(username,password)
+					server.sendmail(fromaddr, toaddrs, msg)
+					toaddrs  = '3038192582@tmomail.net'
+					server.sendmail(fromaddr, toaddrs, msg)
+					toaddrs  = '5308487272@pm.sprint.com'
+					server.sendmail(fromaddr, toaddrs, msg)
+					server.quit()	
+				Alarm = 2
+		
+		
 				
 		if i == 0:
 			print('#Human readable time. Time (s) since start. Lakeshore temperature sensor 218 T1,3,5,6,8 and 224 C2,C3,C4,C5,D2,D3,D5,A,B',file=f)
 		print(str(now)+' '+ str(np.round(t,3)).strip()+' '+str(lk218_T1)+' '+str(lk218_T3)+' '+str(lk218_T5)+' '+str(lk218_T6)+' '+str(lk218_T8)+' '+str(lk224_TC2)+' '+str(lk224_TC3)+' '+str(lk224_TC4)+' '+str(lk224_TC5)+' '+str(lk224_TD2)+' '+str(lk224_TD3)+' '+str(lk224_TD5)+' '+str(lk224_A)+' '+str(lk224_B)+' '+str(lk218_T2)+' '+str(lr750_a_temp)+' '+str(lk224_TD1),file = f) #print the temperature and some nonsense numbers to the file
 		print(str(now)+' '+ str(np.round(t,3)).strip()+' '+str(lk218_T1)+' '+str(lk218_T3)+' '+str(lk218_T5)+' '+str(lk218_T6)+' '+str(lk218_T8)+' '+str(lk224_TC2)+' '+str(lk224_TC3)+' '+str(lk224_TC4)+' '+str(lk224_TC5)+' '+str(lk224_TD2)+' '+str(lk224_TD3)+' '+str(lk224_TD5)+' '+str(lk224_A)+' '+str(lk224_B)+' '+str(lk218_T2)+' '+str(lr750_a_temp)+' '+str(lk224_TD1))
 		#time.sleep(sleep_interval)#sleep for 60 second
+		plt.pause(sleep_interval)
+		
 		i = i + 1
 		
 							
