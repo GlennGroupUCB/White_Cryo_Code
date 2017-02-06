@@ -55,6 +55,8 @@ date_str = str(now)[0:10]
 # we want the file prefix to reflect the date in which the temperature data is taken
 file_prefix =  "C:/Users/tycho/Desktop/White_Cryo_Code/Temps/" + date_str
 file_suffix = ''
+file_prefix2 =  "C:/Users/tycho/Desktop/White_Cryo_Code/Voltage_Current/" + date_str
+file_suffix2 = ''
 
 plt.figure(1,figsize = (21,11))
 ax = plt.gca() #need for changing legend labels
@@ -91,17 +93,25 @@ if os.path.isfile(file_prefix + '_temps.txt') == True: #check if there is alread
 	#If a file already exists add a suffix to the end that consist of the time it was created so it can be distinguished from the original file
 	file_suffix = '_'+str(datetime.datetime.now())[11:13]+'_'+str(datetime.datetime.now())[14:16] 
 f = open(file_prefix + file_suffix +'_temps.txt' ,'w') #open a file to write the temperatures to
+
+if os.path.isfile(file_prefix2 + '_VI.txt') == True: 
+	file_suffix2 = '_'+str(datetime.datetime.now())[11:13]+'_'+str(datetime.datetime.now())[14:16] 
+g = open(file_prefix2 + file_suffix2 +'_VI.txt' ,'w') 
+
 i = 0 #initialize a counter
 try: #allows you to kill the loop with ctrl c
 	while True: #Just loop for every never stopping the monitoring of the temperatures
-		now2 = time.time() #do I need this still? *don't think so
 		now = datetime.datetime.now()
 		if str(now)[0:10] != date_str: #checks if the day has changed (i.e.) at midnight,if it is a new day start a new file
 			f.close() #close the old file
 			date_str = str(now)[0:10]
 			file_prefix =  "C:/Users/tycho/Desktop/White_Cryo_Code/Temps/" + date_str
 			file_suffix = ''
+			file_prefix2 =  "C:/Users/tycho/Desktop/White_Cryo_Code/Voltage_Current/" + date_str
+			file_suffix2 = ''
 			f = open(file_prefix + file_suffix +'_temps.txt' ,'w') #open a new file to write the temperatures to
+			g = open(file_prefix2 + file_suffix2 +'_VI.txt' ,'w') 
+			
 			
 		t = time.time()-start #current time
 		x = np.roll(x,-1) #shift the time array by 1 interval
@@ -111,8 +121,8 @@ try: #allows you to kill the loop with ctrl c
 		curr_y = np.roll(curr_y,-1,axis = 0) #shift current array by 1 interval
 
 		#grab temperatures and store them to the temperature array	
-		temp = get_temps()
-		temp_y[419,:] = temp
+		labels, temps = get_temps()
+		y[419,:] = temps
 		#print(lr750_a)
 		if i == 0: # there is some weirdness where the first call returns an empty string
 			lr750_a_temp = -1
@@ -186,10 +196,19 @@ try: #allows you to kill the loop with ctrl c
 		if i == 0: #if it is the first time writing to file put in a header
 			# not sure this header is up to date also need to add header if a new day has started
 			print('#Human readable time. Time (s) since start. Lakeshore temperature sensor 218 T1,3,5,6,8 and 224 C2,C3,C4,C5,D2,D3,D5,A,B',file=f)
-		# write to file
-		print(str(now)+' '+ str(np.round(t,3)).strip()+' '+str(lk218_T1)+' '+str(lk218_T3)+' '+str(lk218_T5)+' '+str(lk218_T6)+' '+str(lk218_T8)+' '+str(lk224_TC2)+' '+str(lk224_TC3)+' '+str(lk224_TC4)+' '+str(lk224_TC5)+' '+str(lk224_TD2)+' '+str(lk224_TD3)+' '+str(lk224_TD5)+' '+str(lk224_A)+' '+str(lk224_B)+' '+str(lk218_T2)+' '+str(lr750_a_temp)+' '+str(lk224_TD1),file = f) #print the temperature and some nonsense numbers to the file
-		# write to command prompt
-		print(str(now)+' '+ str(np.round(t,3)).strip()+' '+str(lk218_T1)+' '+str(lk218_T3)+' '+str(lk218_T5)+' '+str(lk218_T6)+' '+str(lk218_T8)+' '+str(lk224_TC2)+' '+str(lk224_TC3)+' '+str(lk224_TC4)+' '+str(lk224_TC5)+' '+str(lk224_TD2)+' '+str(lk224_TD3)+' '+str(lk224_TD5)+' '+str(lk224_A)+' '+str(lk224_B)+' '+str(lk218_T2)+' '+str(lr750_a_temp)+' '+str(lk224_TD1))
+		# write temps to file 
+		k = 0		
+		for k in temps:  		
+			print(y[k]+' 'file = f) #print the temperature and some nonsense numbers to the file
+			# write to command prompt
+			print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ y[k])
+			k = k+1
+		k = 0		
+		for k in volt_y:  		
+			print(volt_y[k]+'V '+curr_y[k]+'I ' file = g) #print the current and voltage to the file
+			# write to command prompt
+			print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ volt_y+' '+ curr_y[k])
+			k = k+1
 		#time.sleep(sleep_interval)#sleep for 60 second
 		plt.pause(sleep_interval) # pause for sleep interval before looping again
 		

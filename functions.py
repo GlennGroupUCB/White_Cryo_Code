@@ -13,8 +13,21 @@ import visa
 # date: 12/9/2016
 
 
+
+
+
+
 #Change log
 def get_temps();
+	#form connections to the two lakeshore temperature sensors available
+	lk224 = rm.open_resource('GPIB0::12::INSTR') #lakeshore 224
+	lk218 = rm.open_resource('GPIB0::2::INSTR') #lakeshore 218
+	lr750 = rm.open_resource('GPIB0::4::INSTR') #linear bridge
+
+	#double check that you've connected to the lakeshore temperature sensors by asking them their 		names
+	print(lk218.query('*IDN?'))
+	print(lk224.query('*IDN?'))
+	
 	y[419,0] = lk218_T1 = float(lk218.query('KRDG?1'))
 	#print(y[419,0],lk218_T1)
 	y[419,14] = lk218_T2 = float(lk218.query('KRDG?2'))
@@ -45,7 +58,7 @@ def get_temps();
 			y[419,15] = lr750_a_temp = RX202_interp(-lr750_a_num*1000)
 		except:
 			y[419,15] = lr750_a_temp = -1.
-
+	return y[419,:];
 
 def read_power_supplies():
 
