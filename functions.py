@@ -13,12 +13,12 @@ import visa
 # date: 12/9/2016
 
 
-
+rm = visa.ResourceManager()
 
 
 
 #Change log
-def get_temps();
+def get_temps():
 	#form connections to the two lakeshore temperature sensors available
 	lk224 = rm.open_resource('GPIB0::12::INSTR') #lakeshore 224
 	lk218 = rm.open_resource('GPIB0::2::INSTR') #lakeshore 218
@@ -27,26 +27,26 @@ def get_temps();
 	#double check that you've connected to the lakeshore temperature sensors by asking them their 		names
 	print(lk218.query('*IDN?'))
 	print(lk224.query('*IDN?'))
+	y = np.ones(17)*(-1)
+	y[ 0] = lk218_T1 = float(lk218.query('KRDG?1'))
+	#print(y[ 0],lk218_T1)
+	y[ 14] = lk218_T2 = float(lk218.query('KRDG?2'))
+	y[ 1] = lk218_T3 = float(lk218.query('KRDG?3'))
+	y[ 2] = lk218_T5 = float(lk218.query('KRDG?5'))
+	y[ 3] = lk218_T6 = float(lk218.query('KRDG?6'))
+	y[ 4] = lk218_T8 = float(lk218.query('KRDG?8'))
 	
-	y[419,0] = lk218_T1 = float(lk218.query('KRDG?1'))
-	#print(y[419,0],lk218_T1)
-	y[419,14] = lk218_T2 = float(lk218.query('KRDG?2'))
-	y[419,1] = lk218_T3 = float(lk218.query('KRDG?3'))
-	y[419,2] = lk218_T5 = float(lk218.query('KRDG?5'))
-	y[419,3] = lk218_T6 = float(lk218.query('KRDG?6'))
-	y[419,4] = lk218_T8 = float(lk218.query('KRDG?8'))
+	y[ 5] = lk224_TC2 = float(lk224.query('KRDG? C2'))
+	y[ 6] = lk224_TC3 = float(lk224.query('KRDG? C3'))
+	y[ 7] = lk224_TC4 = float(lk224.query('KRDG? C4'))
+	y[ 8] = lk224_TC5 = float(lk224.query('KRDG? C5'))
+	y[ 9] = lk224_TD2 = float(lk224.query('KRDG? D2'))
+	y[ 10] = lk224_TD3 = float(lk224.query('KRDG? D3'))
+	y[ 11] = lk224_TD5 = float(lk224.query('KRDG? D5'))
 	
-	y[419,5] = lk224_TC2 = float(lk224.query('KRDG? C2'))
-	y[419,6] = lk224_TC3 = float(lk224.query('KRDG? C3'))
-	y[419,7] = lk224_TC4 = float(lk224.query('KRDG? C4'))
-	y[419,8] = lk224_TC5 = float(lk224.query('KRDG? C5'))
-	y[419,9] = lk224_TD2 = float(lk224.query('KRDG? D2'))
-	y[419,10] = lk224_TD3 = float(lk224.query('KRDG? D3'))
-	y[419,11] = lk224_TD5 = float(lk224.query('KRDG? D5'))
-	
-	y[419,12] = lk224_A = float(lk224.query('KRDG? A'))
-	y[419,13] = lk224_B = float(lk224.query('KRDG? B'))
-	y[419,16] = lk224_TD1 = float(lk224.query('KRDG? D1'))
+	y[ 12] = lk224_A = float(lk224.query('KRDG? A'))
+	y[ 13] = lk224_B = float(lk224.query('KRDG? B'))
+	y[ 16] = lk224_TD1 = float(lk224.query('KRDG? D1'))
 	lr750_a = lr750.query('GET 0')
 	#print(lr750_a)
 	if i == 0: # there is some weirdness where the first call returns an empty string
@@ -55,10 +55,10 @@ def get_temps();
 		try: #every once in a while this fails
 			lr750_a_num = np.float(lr750_a[0:8])
 			print(lr750_a_num)
-			y[419,15] = lr750_a_temp = RX202_interp(-lr750_a_num*1000)
+			y[ 15] = lr750_a_temp = RX202_interp(-lr750_a_num*1000)
 		except:
-			y[419,15] = lr750_a_temp = -1.
-	return y[419,:];
+			y[ 15] = lr750_a_temp = -1.
+	return y
 
 def read_power_supplies():
 

@@ -47,8 +47,8 @@ plots = (0,1,2,3,5,6,7,8,9,10,11,12,13,14,15,16)
 Alarm_on = np.array((    0,     1,       0,         0,           0,             0,       0,        0,           0,          0,         0,             1,         0,       0,       1,    0,      0         ))
 Alarm_value =np.array((  0,     60.,     0,         0,           0,             0,       0,        0,           0,          0,         0,             5.,        0,       0,       8.,   0,      0         ))
 
-sleep_interval = 60. #seconds
-Alarm = 1 # 0 for off 1 for on
+sleep_interval = 10. #seconds change back
+Alarm = 0 # 0 for off 1 for on
 
 now = datetime.datetime.now()
 date_str = str(now)[0:10]
@@ -121,7 +121,7 @@ try: #allows you to kill the loop with ctrl c
 		curr_y = np.roll(curr_y,-1,axis = 0) #shift current array by 1 interval
 
 		#grab temperatures and store them to the temperature array	
-		labels, temps = get_temps()
+		temps = get_temps()
 		y[419,:] = temps
 		#print(lr750_a)
 		if i == 0: # there is some weirdness where the first call returns an empty string
@@ -196,19 +196,21 @@ try: #allows you to kill the loop with ctrl c
 		if i == 0: #if it is the first time writing to file put in a header
 			# not sure this header is up to date also need to add header if a new day has started
 			print('#Human readable time. Time (s) since start. Lakeshore temperature sensor 218 T1,3,5,6,8 and 224 C2,C3,C4,C5,D2,D3,D5,A,B',file=f)
-		# write temps to file 
-		k = 0		
-		for k in temps:  		
-			print(y[k]+' 'file = f) #print the temperature and some nonsense numbers to the file
+		# write temps to file 	\
+
+		for k in range(0,len(temps)): 
+			print(str(y[419,k])+' ', file = f) #print the temperature and some nonsense numbers to the file
 			# write to command prompt
-			print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ y[k])
-			k = k+1
-		k = 0		
-		for k in volt_y:  		
-			print(volt_y[k]+'V '+curr_y[k]+'I ' file = g) #print the current and voltage to the file
+			print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(y[419, k]))	
+		
+		
+		volt_str = ''
+		for k in range(0, len(volt)): 
+			volt_str = volt_str + str(volt_y[419,k])+ ","
+			#print(str(volt_y[419, k])+'V '+str(curr_y[419, k])+'I ', file = g) #print the current and voltage to the file
 			# write to command prompt
-			print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ volt_y+' '+ curr_y[k])
-			k = k+1
+			print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(volt_y[419, k])+' '+ str(curr_y[419, k]))
+		print(volt_str,file = g)
 		#time.sleep(sleep_interval)#sleep for 60 second
 		plt.pause(sleep_interval) # pause for sleep interval before looping again
 		
