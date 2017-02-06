@@ -187,7 +187,8 @@ try: #allows you to kill the loop with ctrl c
 		# ADR heat switch want to leave open so that the 1K head can cool the ADR
 		# but turn off before cycle ADR
 		# doesn't cool well if the 4K-1K switch is not on and the film burner is hot
-		if t>70*60 and t<110*60: #70,800
+		'''
+		if t>70*60 and t<800*60: #70,800
 			if lk224_TD2<26.:
 				ag49.write('INST:SEL OUT1')
 				ag49.write('Volt 3.5')#3.5
@@ -200,7 +201,7 @@ try: #allows you to kill the loop with ctrl c
 		else:
 			ag49.write('INST:SEL OUT1')
 			ag49.write('Volt 0')
-				
+		'''		
 		#Heat up the 4He pump
 		if t>0*60 and t<50*60:
 			if lk224_TC2<45.:
