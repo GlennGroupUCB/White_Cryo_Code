@@ -9,7 +9,7 @@ import datetime
 import os
 import smtplib
 from scipy import interpolate
-from functions import read_power_supplies, get_temps
+from functions import read_power_supplies, get_temps, get_press
 import matplotlib.gridspec as gridspec
 
 #Program to monitor the temperatures of the cyrostat
@@ -17,13 +17,13 @@ import matplotlib.gridspec as gridspec
 
 #Change log
 #12/9/16 - Jordan - Added reading and ploting of the voltage and currents of the power supplies.
-#1/22/16 - Jordan - Added a bunch of comment to clarify the code
+#01/22/17 - Jordan - Added a bunch of comment to clarify the code
+#03/10/17 - Tim - Added integration with functions.py. Now can read temp., pressure, Volt, and Curr
 
 #To Do 
-# need to modularize the reading of the temperatures to something like the reading of the power supplies. 
-#that way if we edit the thermometry it will change for both this program and the fridge cycle program
-#
-#Need to add printing of the voltages and current to the file as well
+# Make header for Volt/Current and Pressure
+# plot pressure from get_press() 
+# comment changes
 
 RX202_lookup = np.loadtxt('RX-202A Mean Curve.tbl')#202 ADR sensor look up table
 #RX202_lookup = np.loadtxt('RX-102A Mean Curve.tbl') #102 300mK/ 1K sensors
@@ -57,6 +57,8 @@ file_prefix =  "C:/Users/tycho/Desktop/White_Cryo_Code/Temps/" + date_str
 file_suffix = ''
 file_prefix2 =  "C:/Users/tycho/Desktop/White_Cryo_Code/Voltage_Current/" + date_str
 file_suffix2 = ''
+file_prefix3 =  "C:/Users/tycho/Desktop/White_Cryo_Code/Pressure/" + date_str
+file_suffix3 = ''
 
 plt.figure(1,figsize = (21,11))
 ax = plt.gca() #need for changing legend labels
@@ -65,6 +67,7 @@ print(x[0],x[419])
 y = np.ones((420,17))*-1 #initalize array to hold temperautere
 volt_y = np.zeros((420,6)) #initialize array to hold voltages
 curr_y = np.zeros((420,6)) #initialize array to hold currents
+press_y = np.zeros((420,6))
 
 plt.title("Thermometry")
 plt.xlabel("time (mins)")
@@ -109,8 +112,11 @@ try: #allows you to kill the loop with ctrl c
 			file_suffix = ''
 			file_prefix2 =  "C:/Users/tycho/Desktop/White_Cryo_Code/Voltage_Current/" + date_str
 			file_suffix2 = ''
+			file_prefix3 = "C:/Users/tycho/Desktop/White_Cryo_Code/Pressure/" + date_str
+			file_suffix3 = ''
 			f = open(file_prefix + file_suffix +'_temps.txt' ,'w') #open a new file to write the temperatures to
 			g = open(file_prefix2 + file_suffix2 +'_VI.txt' ,'w') 
+			p = open(file_prefix3 + file_suffix3 + '_press.txt', 'w')
 			
 			
 		t = time.time()-start #current time
@@ -119,7 +125,12 @@ try: #allows you to kill the loop with ctrl c
 		y = np.roll(y,-1,axis = 0) # shift temperature array by 1 interval
 		volt_y = np.roll(volt_y,-1,axis = 0) #shift voltage array by 1 interval
 		curr_y = np.roll(curr_y,-1,axis = 0) #shift current array by 1 interval
+		press_y = np.roll(press_y,-1,axis = 0) #shift pressure array by 1 interval
 
+		#grab pressure and store in pressure array
+		press = get_press()
+		
+		
 		#grab temperatures and store them to the temperature array	
 		temps = get_temps()
 		y[419,:] = temps
@@ -196,8 +207,9 @@ try: #allows you to kill the loop with ctrl c
 		if i == 0: #if it is the first time writing to file put in a header
 			# not sure this header is up to date also need to add header if a new day has started
 			print('#Human readable time. Time (s) since start. Lakeshore temperature sensor 218 T1,3,5,6,8 and 224 C2,C3,C4,C5,D2,D3,D5,A,B',file=f)
-		# write temps to file 	\
-
+			print('#Human readable time. Time (s) since start. Lakeshore temperature sensor 218 T1,3,5,6,8 and 224 C2,C3,C4,C5,D2,D3,D5,A,B',file=f)
+		
+		# write temps to file
 		for k in range(0,len(temps)): 
 			print(str(y[419,k])+' ', file = f) #print the temperature and some nonsense numbers to the file
 			# write to command prompt
@@ -206,7 +218,9 @@ try: #allows you to kill the loop with ctrl c
 		
 		volt_str = ''
 		for k in range(0, len(volt)): 
-			volt_str = volt_str + str(volt_y[419,k])+ ","
+			volt_str = volt_str + str(volt_y[419,k])
+			if k!=len(volt)-1:
+				volt_str = volt_str + ","
 			#print(str(volt_y[419, k])+'V '+str(curr_y[419, k])+'I ', file = g) #print the current and voltage to the file
 			# write to command prompt
 			print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(volt_y[419, k])+' '+ str(curr_y[419, k]))

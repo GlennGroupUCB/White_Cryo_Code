@@ -1,23 +1,67 @@
 import numpy as np
 import visa
+import serial
+import serial.tools.list_ports
+import time
 
-# program to let you the current and voltages of the agilent power supplies
-# the program first checks what the set voltage is 
-#if it is set to zero it will just report zero
-#other wise you get some non sensical readings for current
-#If the voltage is actually set to something then in measures both the voltage and the current
-#
-#I made the program a definition so we could import it to the temp monitoring program
-#the result of that seems to be that it runs one when you import it but oh well
-# written by Jordan Wheeler 
-# date: 12/9/2016
+#Contains function which read pressure, temperture, voltage and current from intruments.
+#designed to be implemented in Temp_monitor.py
+
+#ChangeLog:
+# 03/10/17 - Added get_press() to read and return pressure from 972B DualMag Transducer
+
+
+def get_press():
+	# Connect to Pressure Gauge (900USB-1 @ COM7)
+	ser = serial.Serial( 		#initialize
+	port = 'COM7',	
+	baudrate = 115200,
+	parity=serial.PARITY_NONE,
+	stopbits=serial.STOPBITS_ONE, 
+	bytesize=serial.EIGHTBITS,
+	timeout= 2
+	)
+
+	#print(ser.portstr)
+	if ser.is_open:
+		#print("connected to: ")
+		#print(ser.portstr)
+		#ser.write('@254AD?;FF')		#finds device address '253'
+		
+		#pressdata = ser.read(10)	#read 10 lines of data
+		#line = ser.readline()
+		#print(pressdata)
+		#print(line)
+		
+		#ser.write('@253PR1?;FF') #non combined reading
+		#line = ser.readline()
+		#print(line)
+		ser.write('@253PR4?;FF') #combined reading, 4 digits
+		line = ser.readline()
+		#print(line)
+		i = 0
+		s = 0
+		e = 1
+		for i in range(0, len(line)):	#sparses line to extract pressure
+			if line[i] == 'K':			#find begin of press
+				s = i+1
+			if line[i] == 'E':			#finds end of press and begin of magnitude
+				e = i
+				pow=int(line[i+2])*-1
+				#print pow
+		torr = float(line[s:e])*10**pow	#final combined pressure in Torr
+		print('Pressure: ' + str(torr) + ' torr')
+		
+
+	else:
+		print "COM7 is not open"
+
+
+	ser.close()
+	return torr
 
 
 rm = visa.ResourceManager()
-
-
-
-#Change log
 def get_temps():
 	#form connections to the two lakeshore temperature sensors available
 	lk224 = rm.open_resource('GPIB0::12::INSTR') #lakeshore 224
@@ -60,6 +104,14 @@ def get_temps():
 			y[ 15] = lr750_a_temp = -1.
 	return y
 
+
+# program to let you the current and voltages of the agilent power supplies
+# the program first checks what the set voltage is 
+#if it is set to zero it will just report zero
+#other wise you get some non sensical readings for current
+#If the voltage is actually set to something then in measures both the voltage and the current
+# written by Jordan Wheeler 
+# date: 12/9/2016	
 def read_power_supplies():
 
 	labels = ("He4 pump", "He3 pump", "He4 switch", "He3 switch", "ADR switch", "4K 1K switch")
