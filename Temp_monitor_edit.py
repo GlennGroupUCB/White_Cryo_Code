@@ -19,11 +19,10 @@ import matplotlib.gridspec as gridspec
 #12/9/16 - Jordan - Added reading and ploting of the voltage and currents of the power supplies.
 #01/22/17 - Jordan - Added a bunch of comment to clarify the code
 #03/10/17 - Tim - Added integration with functions.py. Now can read temp., pressure, Volt, and Curr
+#03/13/17 - Tim - Plots pressure and creates text files. Added headers to Volt and Press
 
 #To Do 
-# Make header for Volt/Current and Pressure
-# plot pressure from get_press() 
-# comment changes
+
 
 RX202_lookup = np.loadtxt('RX-202A Mean Curve.tbl')#202 ADR sensor look up table
 #RX202_lookup = np.loadtxt('RX-102A Mean Curve.tbl') #102 300mK/ 1K sensors
@@ -67,13 +66,13 @@ print(x[0],x[419])
 y = np.ones((420,17))*-1 #initalize array to hold temperautere
 volt_y = np.zeros((420,6)) #initialize array to hold voltages
 curr_y = np.zeros((420,6)) #initialize array to hold currents
-press_y = np.zeros((420,6))
+press_y = np.zeros((420,1))
 
 plt.title("Thermometry")
 plt.xlabel("time (mins)")
 plt.ylabel("Temperature (K)")
 plt.ion() #need for constantly updating plot
-gs = gridspec.GridSpec(3,3)#allows for custom subplot layout
+gs = gridspec.GridSpec(4,4)#allows for custom subplot layout
 plt.show()
 
 
@@ -100,6 +99,10 @@ f = open(file_prefix + file_suffix +'_temps.txt' ,'w') #open a file to write the
 if os.path.isfile(file_prefix2 + '_VI.txt') == True: 
 	file_suffix2 = '_'+str(datetime.datetime.now())[11:13]+'_'+str(datetime.datetime.now())[14:16] 
 g = open(file_prefix2 + file_suffix2 +'_VI.txt' ,'w') 
+
+if os.path.isfile(file_prefix3 + '_press.txt') == True: 
+	file_suffix3 = '_'+str(datetime.datetime.now())[11:13]+'_'+str(datetime.datetime.now())[14:16] 
+p = open(file_prefix3 + file_suffix3 +'_press.txt' ,'w') 
 
 i = 0 #initialize a counter
 try: #allows you to kill the loop with ctrl c
@@ -129,11 +132,12 @@ try: #allows you to kill the loop with ctrl c
 
 		#grab pressure and store in pressure array
 		press = get_press()
-		
+		press_y[419,:]=press
 		
 		#grab temperatures and store them to the temperature array	
 		temps = get_temps()
 		y[419,:] = temps
+		
 		#print(lr750_a)
 		if i == 0: # there is some weirdness where the first call returns an empty string
 			lr750_a_temp = -1
@@ -155,7 +159,7 @@ try: #allows you to kill the loop with ctrl c
 				legend.get_texts()[k].set_text(labels[j]+" " +str(y[419,j])[0:5]+"K") #if it is not the first time ploting rewrite the legend with the new temps
 			k = k+1
 		if i == 0:	#if it is the first time ploting generate the legend				
-			legend = plt.legend(ncol = 1,loc =2)
+			legend = plt.legend(ncol = 2,loc =2)
 		plt.xlim(x[0],x[419])
 		plt.ylim(0.1,300)
 		
@@ -163,6 +167,7 @@ try: #allows you to kill the loop with ctrl c
 		power_labels, volt, curr = read_power_supplies()
 		volt_y[419,:]= volt
 		curr_y[419,:]= curr
+		
 			
 		# plot the power levels	
 		plt.subplot(gs[2,:])
@@ -173,11 +178,24 @@ try: #allows you to kill the loop with ctrl c
 				legend_power.get_texts()[k].set_text(power_labels[j]+" " +str(volt_y[419,j])[0:4]+"V "+ str(curr_y[419,j])[0:6]+"A")#if it is not the first time ploting rewrite the legend with the new temps
 			k = k+1
 		if i ==0:
-			legend_power= plt.legend(ncol = 1,loc = 2)	 #If it is the first time plotting generate the legend	
+			legend_power= plt.legend(ncol = 2,loc = 2)	 #If it is the first time plotting generate the legend	
 		plt.xlim(x[0],x[419])
 		plt.ylim(0,30)
-			
+		
+		
+		#plot pressure
+		plt.subplot(gs[3,:])
+		plt.semilogy(x,press_y, color = 'b', linestyle = '-', linewidth = 2, label = 'Pressure ' + str(press_y[419,0]) + ' torr')
+		if i!=0:
+			legend_press.get_texts()[0].set_text('Pressure ' + str(press_y[419,0]) + ' torr')
+		if i==0:
+			legend_press= plt.legend(ncol = 1, loc = 2)
+		plt.xlim(x[0],x[419])
+		plt.ylim((1*10**-6),1)
+		
 		plt.draw() #update the plot
+			
+		
 
 		#Alarm function
 		if Alarm != 0: #if the alarm is turned on proceed
@@ -207,13 +225,21 @@ try: #allows you to kill the loop with ctrl c
 		if i == 0: #if it is the first time writing to file put in a header
 			# not sure this header is up to date also need to add header if a new day has started
 			print('#Human readable time. Time (s) since start. Lakeshore temperature sensor 218 T1,3,5,6,8 and 224 C2,C3,C4,C5,D2,D3,D5,A,B',file=f)
-			print('#Human readable time. Time (s) since start. Lakeshore temperature sensor 218 T1,3,5,6,8 and 224 C2,C3,C4,C5,D2,D3,D5,A,B',file=f)
+			print('#Human readable time. Time (s) since start. Pressure (torr).', file = p)
+			print('#Human readable time. Time (s) since start. V @ ag47t. A @ ag47t. V @ ag47b. A @ ag47b. V @ ag49. A @ ag49.', file=g)
 		
 		# write temps to file
 		for k in range(0,len(temps)): 
-			print(str(y[419,k])+' ', file = f) #print the temperature and some nonsense numbers to the file
+			print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(y[419,k])+' ', file = f) #print the temperature and some nonsense numbers to the file
 			# write to command prompt
-			print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(y[419, k]))	
+			print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(y[419, k]))
+		
+		
+		# write press to file
+		 
+		print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(press_y[419,0])+' ', file = p) #print the temperature and some nonsense numbers to the file
+		# write to command prompt
+		print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(press_y[419, 0]))	
 		
 		
 		volt_str = ''
@@ -224,7 +250,7 @@ try: #allows you to kill the loop with ctrl c
 			#print(str(volt_y[419, k])+'V '+str(curr_y[419, k])+'I ', file = g) #print the current and voltage to the file
 			# write to command prompt
 			print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(volt_y[419, k])+' '+ str(curr_y[419, k]))
-		print(volt_str,file = g)
+		print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ volt_str,file = g)
 		#time.sleep(sleep_interval)#sleep for 60 second
 		plt.pause(sleep_interval) # pause for sleep interval before looping again
 		
