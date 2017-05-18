@@ -1,0 +1,2 @@
+#Human readable time. Time (s) since start. Pressure (torr).
+2017-03-15 15:14:57.292000 0.002 0.9787 

@@ -1,0 +1,19 @@
+#Human readable time. Time (s) since start. Lakeshore temperature sensor 218 T1,3,5,6,8 and 224 C2,C3,C4,C5,D2,D3,D5,A,B
+#Human readable time. Time (s) since start. Lakeshore temperature sensor 218 T1,3,5,6,8 and 224 C2,C3,C4,C5,D2,D3,D5,A,B
+293.94 
+293.72 
+293.91 
+294.07 
+294.36 
+295.917 
+295.726 
+295.613 
+295.757 
+295.717 
+295.985 
+293.307 
+0.0 
+0.0 
+293.81 
+-1.0 
+0.0 
