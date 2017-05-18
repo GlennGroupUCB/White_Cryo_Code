@@ -3,14 +3,45 @@ import visa
 import serial
 import serial.tools.list_ports
 import time
+#added
+import matplotlib
+matplotlib.use('qt4agg')#need for continuously updating plot
+import matplotlib.pyplot as plt
+import smtplib
+import matplotlib.gridspec as gridspec
 
-#Contains function which read pressure, temperture, voltage and current from intruments.
+#Contains function which read pressure, temperture, voltage and current from intruments as well as plotting and writing to file.
 #designed to be implemented in Temp_monitor.py
+#Created by Tim Childers in March 2017
 
 #ChangeLog:
-# 03/10/17 - Added get_press() to read and return pressure from 972B DualMag Transducer
+# 03/10/17 - Added get_press() to read and return pressure from 972B DualMag Transducer - Tim
+# 03/15/17 - Changed timeout of get_press() to 0.1 sec to minimize delay. Can't go under 0.1 sec without throwing error - Tim
+# 04/10/17 - added plot_and_write() function for use with fast monitor - Tim
+
+#initializes plot resources for temperature
+def initialize():
+	# this is just some stuff i use to cycle thorugh plot line styles/colors
+	lines = ['-','--','-.']
+	colors = ['b','g','r','c','m','y','k']
+
+	#labels for the thermometers extra space is so the numbers all line up. might be a better way to add the space
+	labels = ['4K P.T.               ','4K HTS             ','50K HTS           ','Black Body       ','50K P.T.            ','50K Plate         ','ADR Shield      ','4He Pump        ','3He Pump        ','4He Switch        ','3He Switch        ','300 mK Shield   ','ADK Switch        ','4-1K Switch       ','1K Shield           ','4K Plate           ','3He Head          ','4He Head          ','ADR                   ']
 
 
+	#allows you to not plot ugly thermometers
+	plots = (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17)
+	
+	return lines, colors, labels, plots
+
+
+
+	
+#create a resourcemanager and see what instruments the computer can talk to
+#path = os.path.normpath("C:/Program Files/IVI Foundation/VISA/Win64/Lib_x64/msc/visa64.lib")
+rm = visa.ResourceManager()
+print rm.list_resources()
+	
 def get_press():
 	# Connect to Pressure Gauge (900USB-1 @ COM7)
 	ser = serial.Serial( 		#initialize
@@ -49,8 +80,8 @@ def get_press():
 				e = i
 				pow=int(line[i+2])*-1
 				#print pow
-		torr = float(line[s:e])*10**pow	#final combined pressure in Torr
-		print('Pressure: ' + str(torr) + ' torr')
+		mBar = float(line[s:e])*1.33322*10**pow	#final combined pressure in mbar
+		print('Pressure: ' + str(mBar) + ' mbar')
 		
 
 	else:
@@ -58,39 +89,42 @@ def get_press():
 
 
 	ser.close()
-	return torr
+	return mBar
 
 
-rm = visa.ResourceManager()
+
 def get_temps():
-	#form connections to the two lakeshore temperature sensors available
+	#form connections to the two lakeshore temperature, and one resistance devices available
 	lk224 = rm.open_resource('GPIB0::12::INSTR') #lakeshore 224
 	lk218 = rm.open_resource('GPIB0::2::INSTR') #lakeshore 218
 	lr750 = rm.open_resource('GPIB0::4::INSTR') #linear bridge
 
 	#double check that you've connected to the lakeshore temperature sensors by asking them their 		names
-	print(lk218.query('*IDN?'))
-	print(lk224.query('*IDN?'))
-	y = np.ones(17)*(-1)
-	y[ 0] = lk218_T1 = float(lk218.query('KRDG?1'))
+	#print(lk218.query('*IDN?'))
+	#print(lk224.query('*IDN?'))
+	y = np.ones(19)*(-1)
 	#print(y[ 0],lk218_T1)
-	y[ 14] = lk218_T2 = float(lk218.query('KRDG?2'))
-	y[ 1] = lk218_T3 = float(lk218.query('KRDG?3'))
-	y[ 2] = lk218_T5 = float(lk218.query('KRDG?5'))
-	y[ 3] = lk218_T6 = float(lk218.query('KRDG?6'))
-	y[ 4] = lk218_T8 = float(lk218.query('KRDG?8'))
+	y[ 0] = lk218_T1 = float(lk218.query('KRDG?1'))
+	y[ 1] = lk218_T2 = float(lk218.query('KRDG?2'))
+	y[ 2] = lk218_T3 = float(lk218.query('KRDG?3'))
+	y[ 3] = lk218_T4 = float(lk218.query('KRDG?4'))
+	y[ 4] = lk218_T5 = float(lk218.query('KRDG?5'))
+	y[ 5] = lk218_T6 = float(lk218.query('KRDG?6'))
+	y[ 6] = lk218_T8 = float(lk218.query('KRDG?8'))
 	
-	y[ 5] = lk224_TC2 = float(lk224.query('KRDG? C2'))
-	y[ 6] = lk224_TC3 = float(lk224.query('KRDG? C3'))
-	y[ 7] = lk224_TC4 = float(lk224.query('KRDG? C4'))
-	y[ 8] = lk224_TC5 = float(lk224.query('KRDG? C5'))
-	y[ 9] = lk224_TD2 = float(lk224.query('KRDG? D2'))
-	y[ 10] = lk224_TD3 = float(lk224.query('KRDG? D3'))
-	y[ 11] = lk224_TD5 = float(lk224.query('KRDG? D5'))
+	y[ 7] = lk224_TC2 = float(lk224.query('KRDG? C2'))
+	y[ 8] = lk224_TC3 = float(lk224.query('KRDG? C3'))
+	y[ 9] = lk224_TC4 = float(lk224.query('KRDG? C4'))
+	y[ 10] = lk224_TC5 = float(lk224.query('KRDG? C5'))
+	y[ 11] = lk224_TD1 = float(lk224.query('KRDG? D1'))
+	y[ 12] = lk224_TD2 = float(lk224.query('KRDG? D2'))
+	y[ 13] = lk224_TD3 = float(lk224.query('KRDG? D3'))
+	y[ 14] = lk224_TD4 = float(lk224.query('KRDG? D4'))
+	y[ 15] = lk224_TD5 = float(lk224.query('KRDG? D5'))
 	
-	y[ 12] = lk224_A = float(lk224.query('KRDG? A'))
-	y[ 13] = lk224_B = float(lk224.query('KRDG? B'))
-	y[ 16] = lk224_TD1 = float(lk224.query('KRDG? D1'))
+	y[ 16] = lk224_A = float(lk224.query('KRDG? A'))
+	y[ 17] = lk224_B = float(lk224.query('KRDG? B'))
+	
 	lr750_a = lr750.query('GET 0')
 	#print(lr750_a)
 	if i == 0: # there is some weirdness where the first call returns an empty string
@@ -98,10 +132,10 @@ def get_temps():
 	if i != 0:
 		try: #every once in a while this fails
 			lr750_a_num = np.float(lr750_a[0:8])
-			print(lr750_a_num)
-			y[ 15] = lr750_a_temp = RX202_interp(-lr750_a_num*1000)
+			#print(lr750_a_num)
+			y[ 18] = lr750_a_temp = RX202_interp(-lr750_a_num*1000)
 		except:
-			y[ 15] = lr750_a_temp = -1.
+			y[ 18] = lr750_a_temp = -1.
 	return y
 
 

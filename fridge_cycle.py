@@ -29,7 +29,7 @@ colors = ['b','g','r','c','m','y','k']
 
 plots = (0,1,2,3,5,6,7,8,9,10,11,12,13,14,15,16)
 
-sleep_interval = 60. #seconds
+sleep_interval = 10. #seconds
 Alarm = 0 # 0 for off 1 for on
 Alarm_test = np.zeros(15) #
 Alarm_base = np.ones(15)*100.# this is where you fill in your max temp values for the alarm
@@ -184,16 +184,9 @@ try: #allows you to kill the loop with ctrl c
 		# ADR heat switch want to leave open so that the 1K head can cool the ADR
 		# but turn off before cycle ADR
 		# doesn't cool well if the 4K-1K switch is not on and the film burner is hot
-		if t>70*60 and t<800*60: #70,800
-			if lk224_TD2<26.:
-				ag49.write('INST:SEL OUT1')
-				ag49.write('Volt 3.5')#3.5
-			if lk224_TD2>30.: #temp should drop slowly
-				ag49.write('INST:SEL OUT1')
-				ag49.write('Volt 2.5')#2.5
-			if lk224_TD2>35.: #just in case
-				ag49.write('INST:SEL OUT1')
-				ag49.write('Volt 0')
+		if t>120*60 and t<180*60: #70,800
+			ag49.write('INST:SEL OUT1')
+			ag49.write('Volt 1.75')#3.5
 		else:
 			ag49.write('INST:SEL OUT1')
 			ag49.write('Volt 0')

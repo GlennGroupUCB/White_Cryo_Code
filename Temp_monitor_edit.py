@@ -9,20 +9,20 @@ import datetime
 import os
 import smtplib
 from scipy import interpolate
-from functions import read_power_supplies, get_temps, get_press
+from functions import read_power_supplies, get_temps, get_press, initialize
 import matplotlib.gridspec as gridspec
 
 #Program to monitor the temperatures of the cyrostat
 #written by Jordan at some date lost in time. 
 
-#Change log
+#CHANGE LOG
 #12/9/16 - Jordan - Added reading and ploting of the voltage and currents of the power supplies.
 #01/22/17 - Jordan - Added a bunch of comment to clarify the code
 #03/10/17 - Tim - Added integration with functions.py. Now can read temp., pressure, Volt, and Curr
 #03/13/17 - Tim - Plots pressure and creates text files. Added headers to Volt and Press
+#05/11/17 - Tim - Changed plots to reflect new temp sensors, fixed print to file for temps, set alarm to 0
 
-#To Do 
-
+#TO DO 
 
 RX202_lookup = np.loadtxt('RX-202A Mean Curve.tbl')#202 ADR sensor look up table
 #RX202_lookup = np.loadtxt('RX-102A Mean Curve.tbl') #102 300mK/ 1K sensors
@@ -30,21 +30,12 @@ RX202_interp = interpolate.interp1d(RX202_lookup[:,1], RX202_lookup[:,0],fill_va
 #test = np.float(RX202_interp(4000))
 #RX202_temps = RX202_interp(-linear_bridge*1000)
 
-# this is just some stuff i use to cycle thorugh plot line styles/colors
-lines = ['-','--','-.']
-colors = ['b','g','r','c','m','y','k']
-
-#labels for the thermometers extra space is so the numbers all line up. might be a better way to add the space
-labels = ['4K P.T.               ','50K HTS            ','50K P.T.             ','50K plate          ','ADR rad shield','4He pump         ','3He pump         ','4He switch        ','3He switch        ','ADR switch        ','4K-1K switch      ','4K plate             ','3He head           ','4He head           ','4K HTS               ','ADR                    ','Head ADR switch']
-
-
-#allows you to not plot ugly thermometers
-plots = (0,1,2,3,5,6,7,8,9,10,11,12,13,14,15,16)
+lines, colors, labels, plots = initialize()
 
 # turn on alarm on for certain values
-#                     4K P.T--50K HTS--50K P.T.--50K plate--ADR rad shield'--4He pump--3He pump--4He switch--3He switch--ADR switch--4K-1K switch--4K plate--3He head--4He head--4K HTS--ADR--Head ADR switch
-Alarm_on = np.array((    0,     1,       0,         0,           0,             0,       0,        0,           0,          0,         0,             1,         0,       0,       1,    0,      0         ))
-Alarm_value =np.array((  0,     60.,     0,         0,           0,             0,       0,        0,           0,          0,         0,             5.,        0,       0,       8.,   0,      0         ))
+#                     4K P.T--4K HTS--50K HTS--Black Body--50K P.T.--50K Plate--ADR Shield--4He Pump--3He Pump--4He Switch--3 He Switch--300 mK Shield--ADK Switch--4-1K Switch--1K Shield--3He Head--4He Head--ADR--
+Alarm_on = np.array((  0,     0,       0,         0,           0,             0,       0,        0,           0,          0,         0,             0,        0,      0,       0,    0,      0, 	0))
+Alarm_value =np.array((0,     0,       0,         0,           0,             0,       0,        0,           0,          0,         0,             0,        0,      0,       0,    0,      0, 	0))
 
 sleep_interval = 10. #seconds change back
 Alarm = 0 # 0 for off 1 for on
@@ -63,7 +54,7 @@ plt.figure(1,figsize = (21,11))
 ax = plt.gca() #need for changing legend labels
 x = np.arange(-420,0)*1. # initalize the x axis i.e. time going 420 mins into the past
 print(x[0],x[419])
-y = np.ones((420,17))*-1 #initalize array to hold temperautere
+y = np.ones((420,19))*-1 #initalize array to hold temperautere
 volt_y = np.zeros((420,6)) #initialize array to hold voltages
 curr_y = np.zeros((420,6)) #initialize array to hold currents
 press_y = np.zeros((420,1))
@@ -74,21 +65,6 @@ plt.ylabel("Temperature (K)")
 plt.ion() #need for constantly updating plot
 gs = gridspec.GridSpec(4,4)#allows for custom subplot layout
 plt.show()
-
-
-#create a resourcemanager and see what instruments the computer can talk to
-#path = os.path.normpath("C:/Program Files/IVI Foundation/VISA/Win64/Lib_x64/msc/visa64.lib")
-rm = visa.ResourceManager()
-print, rm.list_resources()
-
-#form connections to the two lakeshore temperature sensors available
-lk224 = rm.open_resource('GPIB0::12::INSTR') #lakeshore 224
-lk218 = rm.open_resource('GPIB0::2::INSTR') #lakeshore 218
-lr750 = rm.open_resource('GPIB0::4::INSTR') #linear bridge
-
-#double check that you've connected to the lakeshore temperature sensors by asking them their names
-print(lk218.query('*IDN?'))
-print(lk224.query('*IDN?'))
 
 start = time.time() #define a start time
 if os.path.isfile(file_prefix + '_temps.txt') == True: #check if there is already a file with the prefix we are trying to use
@@ -114,12 +90,11 @@ try: #allows you to kill the loop with ctrl c
 			file_prefix =  "C:/Users/tycho/Desktop/White_Cryo_Code/Temps/" + date_str
 			file_suffix = ''
 			file_prefix2 =  "C:/Users/tycho/Desktop/White_Cryo_Code/Voltage_Current/" + date_str
-			file_suffix2 = ''
 			file_prefix3 = "C:/Users/tycho/Desktop/White_Cryo_Code/Pressure/" + date_str
-			file_suffix3 = ''
+			
 			f = open(file_prefix + file_suffix +'_temps.txt' ,'w') #open a new file to write the temperatures to
-			g = open(file_prefix2 + file_suffix2 +'_VI.txt' ,'w') 
-			p = open(file_prefix3 + file_suffix3 + '_press.txt', 'w')
+			g = open(file_prefix2 + file_suffix +'_VI.txt' ,'w') 
+			p = open(file_prefix3 + file_suffix + '_press.txt', 'w')
 			
 			
 		t = time.time()-start #current time
@@ -138,26 +113,17 @@ try: #allows you to kill the loop with ctrl c
 		temps = get_temps()
 		y[419,:] = temps
 		
-		#print(lr750_a)
-		if i == 0: # there is some weirdness where the first call returns an empty string
-			lr750_a_temp = -1
-		if i != 0:
-			try: #every once in a while this fails
-				lr750_a_num = np.float(lr750_a[0:8]) #convert resitance string to float
-				print(lr750_a_num)
-				y[419,15] = lr750_a_temp = RX202_interp(-lr750_a_num*1000) # convert restance value to temperature
-			except:
-				y[419,15] = lr750_a_temp = -1. #if we get a bad string just return -1
 		
 		k = 0 #intiialize a counter
 		
 		plt.subplot(gs[0:2,:]) #create top subplot 
 		for j in plots: #plot all of the temperatures with appropriate labels
 			#print(y[419,j])
-			plt.semilogy(x,y[:,j],color = colors[np.mod(j,7)],linestyle = lines[j/7],linewidth = 2, label = labels[j]+" " +str(y[419,j])[0:5]+"K")
+			plt.semilogy(x,y[:,j],color = colors[np.mod(j,7)],linestyle = lines[j/7],linewidth = 2, label = labels[k]+" " +str(y[419,j])[0:5]+"K")
 			if i != 0:
-				legend.get_texts()[k].set_text(labels[j]+" " +str(y[419,j])[0:5]+"K") #if it is not the first time ploting rewrite the legend with the new temps
+				legend.get_texts()[k].set_text(labels[k]+" " +str(y[419,j])[0:5]+"K") #if it is not the first time ploting rewrite the legend with the new temps
 			k = k+1
+			
 		if i == 0:	#if it is the first time ploting generate the legend				
 			legend = plt.legend(ncol = 2,loc =2)
 		plt.xlim(x[0],x[419])
@@ -185,9 +151,9 @@ try: #allows you to kill the loop with ctrl c
 		
 		#plot pressure
 		plt.subplot(gs[3,:])
-		plt.semilogy(x,press_y, color = 'b', linestyle = '-', linewidth = 2, label = 'Pressure ' + str(press_y[419,0]) + ' torr')
+		plt.semilogy(x,press_y, color = 'b', linestyle = '-', linewidth = 2, label = 'Pressure ' + str(press_y[419,0]) + ' mbar')
 		if i!=0:
-			legend_press.get_texts()[0].set_text('Pressure ' + str(press_y[419,0]) + ' torr')
+			legend_press.get_texts()[0].set_text('Pressure ' + str(press_y[419,0]) + ' mbar')
 		if i==0:
 			legend_press= plt.legend(ncol = 1, loc = 2)
 		plt.xlim(x[0],x[419])
@@ -224,15 +190,17 @@ try: #allows you to kill the loop with ctrl c
 				
 		if i == 0: #if it is the first time writing to file put in a header
 			# not sure this header is up to date also need to add header if a new day has started
-			print('#Human readable time. Time (s) since start. Lakeshore temperature sensor 218 T1,3,5,6,8 and 224 C2,C3,C4,C5,D2,D3,D5,A,B',file=f)
+			print('#Human readable time. Time (s) since start. Lakeshore temperature sensor 218 T1,2,3,4,5,6,8 and 224 C2,C3,C4,C5,D1,D2,D3,D4,D5,A,B',file=f)
 			print('#Human readable time. Time (s) since start. Pressure (torr).', file = p)
 			print('#Human readable time. Time (s) since start. V @ ag47t. A @ ag47t. V @ ag47b. A @ ag47b. V @ ag49. A @ ag49.', file=g)
 		
 		# write temps to file
+		print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(y[419,0])+' '+ str(y[419,1])+' '+ str(y[419,2])+' '+ str(y[419,3])+' '+ str(y[419,4])+' '+ str(y[419,5])+' '+ str(y[419,6])+' '+ str(y[419,7])+' '+ str(y[419,8])+' '+ str(y[419,9])+' '+ str(y[419,10])+' '+ str(y[419,11])+' '+ str(y[419,12])+' '+ str(y[419,13])+' '+ str(y[419,14])+' '+ str(y[419,15])+' '+ str(y[419,16])+' '+ str(y[419,17])+' ', file = f) #print the temperature and some nonsense numbers to the file
 		for k in range(0,len(temps)): 
-			print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(y[419,k])+' ', file = f) #print the temperature and some nonsense numbers to the file
 			# write to command prompt
 			print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(y[419, k]))
+			
+			
 		
 		
 		# write press to file
@@ -241,13 +209,14 @@ try: #allows you to kill the loop with ctrl c
 		# write to command prompt
 		print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(press_y[419, 0]))	
 		
-		
+		#print the current and voltage to the file
 		volt_str = ''
 		for k in range(0, len(volt)): 
 			volt_str = volt_str + str(volt_y[419,k])
 			if k!=len(volt)-1:
 				volt_str = volt_str + ","
-			#print(str(volt_y[419, k])+'V '+str(curr_y[419, k])+'I ', file = g) #print the current and voltage to the file
+			#print(str(volt_y[419, k])+'V '+str(curr_y[419, k])+'I ', file = g) 
+			
 			# write to command prompt
 			print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(volt_y[419, k])+' '+ str(curr_y[419, k]))
 		print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ volt_str,file = g)
@@ -262,4 +231,4 @@ except KeyboardInterrupt: #if you press ctrl c quit
 
 f.close() #close the file
 
-print("Temperature monitoring disabled")
+print("Monitoring disabled")

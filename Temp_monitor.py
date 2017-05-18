@@ -48,7 +48,7 @@ Alarm_on = np.array((    0,     1,       0,         0,           0,             
 Alarm_value =np.array((  0,     60.,     0,         0,           0,             0,       0,        0,           0,          0,         0,             5.,        0,       0,       8.,   0,      0         ))
 
 sleep_interval = 60. #seconds
-Alarm = 1 # 0 for off 1 for on
+Alarm = 0 # 0 for off 1 for on
 
 now = datetime.datetime.now()
 date_str = str(now)[0:10]
