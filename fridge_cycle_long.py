@@ -47,8 +47,12 @@ try: #allows you to kill the loop with ctrl c
 		
 		
 		#grab temperatures and store them to the temperature array	
-		temps = get_temps()
-		y = temps
+		try:	
+			temps = get_temps()
+			y = temps
+		except: 
+			time.sleep(5)
+			print('timeout occured')
 		
 		lk218_T1 = y[0]
 		lk218_T2 = y[1]
@@ -121,7 +125,7 @@ try: #allows you to kill the loop with ctrl c
 			ag47t.write('Volt 0')
 			
 		#close (heat) the He4 switch turn on when He4 pump is turned off leave on forever
-		if t>100*60 and t<300*60:
+		if t>100*60 and t<400*60:
 			if lk224_TC4<29.:
 				ag47b.write('INST:SEL OUT1')
 				ag47b.write('Volt 4')
@@ -146,7 +150,7 @@ try: #allows you to kill the loop with ctrl c
 			ag47b.write('Volt 0')
 			
 		#close (heat) the He3 switch turn on when He3 pump is turned off leave on forever
-		if t>100*60 and t<300*60:
+		if t>200*60 and t<400*60:
 			if lk224_TC5<30.:
 				ag47b.write('INST:SEL OUT2')
 				ag47b.write('Volt 3.6')
@@ -156,7 +160,7 @@ try: #allows you to kill the loop with ctrl c
 			if lk224_TC5>35.: #just in case
 				ag47b.write('INST:SEL OUT2')
 				ag47b.write('Volt 0')
-		elif t>300*60 and lk224_A<0.5: #keep the switchs on until 300mK stage warms up
+		elif t>400*60 and lk224_A<0.5: #keep the switchs on until 300mK stage warms up
 			if lk224_TC5<30.:
 				ag47b.write('INST:SEL OUT2')
 				ag47b.write('Volt 3.6')
@@ -171,7 +175,7 @@ try: #allows you to kill the loop with ctrl c
 			ag47b.write('Volt 0')
 			
 		#monitor when the 300mK stage heats up.
-		if t>300*60:
+		if t>400*60:
 			if lk224_A>0.5:
 				print("fridge cycle complete")
 				k = k+1
@@ -185,7 +189,7 @@ try: #allows you to kill the loop with ctrl c
 		if seconds >= 60:
 			seconds = int(t-(60*minutes))
 		if minutes >= 60:
-			minutes = int(t-(3600*minutes))
+			minutes = int(t-(60*minutes))
 		print('Cycle duration: ', hours , ':', minutes, ':', seconds)
 		time.sleep(10)
 		

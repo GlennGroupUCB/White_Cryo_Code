@@ -11,15 +11,11 @@ from scipy import interpolate
 from functions import read_power_supplies, get_temps, get_press, initialize
 import matplotlib.gridspec as gridspec
 
-#Program to monitor the temperatures of the cyrostat
-#written by Jordan at some date lost in time. 
+#Program to monitor and plot only temperature, voltage and current
+
 
 #CHANGE LOG
-#12/9/16 - Jordan - Added reading and ploting of the voltage and currents of the power supplies.
-#01/22/17 - Jordan - Added a bunch of comment to clarify the code
-#03/10/17 - Tim - Added integration with functions.py. Now can read temp., pressure, Volt, and Curr
-#03/13/17 - Tim - Plots pressure and creates text files. Added headers to Volt and Press
-#05/11/17 - Tim - Changed plots to reflect new temp sensors, fixed print to file for temps, set alarm to 0
+#5/22/17 Started
 
 #TO DO 
 
@@ -46,8 +42,6 @@ file_prefix =  "C:/Users/tycho/Desktop/White_Cryo_Code/Temps/" + date_str
 file_suffix = ''
 file_prefix2 =  "C:/Users/tycho/Desktop/White_Cryo_Code/Voltage_Current/" + date_str
 file_suffix2 = ''
-file_prefix3 =  "C:/Users/tycho/Desktop/White_Cryo_Code/Pressure/" + date_str
-file_suffix3 = ''
 
 plt.figure(1,figsize = (21,11))
 ax = plt.gca() #need for changing legend labels
@@ -56,13 +50,13 @@ print(x[0],x[419])
 y = np.ones((420,19))*-1 #initalize array to hold temperautere
 volt_y = np.zeros((420,6)) #initialize array to hold voltages
 curr_y = np.zeros((420,6)) #initialize array to hold currents
-press_y = np.zeros((420,1))
+
 
 plt.title("Thermometry")
 plt.xlabel("time (mins)")
 plt.ylabel("Temperature (K)")
 plt.ion() #need for constantly updating plot
-gs = gridspec.GridSpec(4,4)#allows for custom subplot layout
+gs = gridspec.GridSpec(3,3)#allows for custom subplot layout
 plt.show()
 
 start = time.time() #define a start time
@@ -75,9 +69,6 @@ if os.path.isfile(file_prefix2 + '_VI.txt') == True:
 	file_suffix2 = '_'+str(datetime.datetime.now())[11:13]+'_'+str(datetime.datetime.now())[14:16] 
 g = open(file_prefix2 + file_suffix2 +'_VI.txt' ,'w') 
 
-if os.path.isfile(file_prefix3 + '_press.txt') == True: 
-	file_suffix3 = '_'+str(datetime.datetime.now())[11:13]+'_'+str(datetime.datetime.now())[14:16] 
-p = open(file_prefix3 + file_suffix3 +'_press.txt' ,'w') 
 
 i = 0 #initialize a counter
 try: #allows you to kill the loop with ctrl c
@@ -89,11 +80,11 @@ try: #allows you to kill the loop with ctrl c
 			file_prefix =  "C:/Users/tycho/Desktop/White_Cryo_Code/Temps/" + date_str
 			file_suffix = ''
 			file_prefix2 =  "C:/Users/tycho/Desktop/White_Cryo_Code/Voltage_Current/" + date_str
-			file_prefix3 = "C:/Users/tycho/Desktop/White_Cryo_Code/Pressure/" + date_str
+			
 			
 			f = open(file_prefix + file_suffix +'_temps.txt' ,'w') #open a new file to write the temperatures to
 			g = open(file_prefix2 + file_suffix +'_VI.txt' ,'w') 
-			p = open(file_prefix3 + file_suffix + '_press.txt', 'w')
+			
 			
 			
 		t = time.time()-start #current time
@@ -102,22 +93,20 @@ try: #allows you to kill the loop with ctrl c
 		y = np.roll(y,-1,axis = 0) # shift temperature array by 1 interval
 		volt_y = np.roll(volt_y,-1,axis = 0) #shift voltage array by 1 interval
 		curr_y = np.roll(curr_y,-1,axis = 0) #shift current array by 1 interval
-		press_y = np.roll(press_y,-1,axis = 0) #shift pressure array by 1 interval
-
-		#grab pressure and store in pressure array
-		press = get_press()
-		press_y[419,:]=press
-		
+	
 		#grab temperatures and store them to the temperature array	
-		temps = get_temps()
-		y[419,:] = temps
 		
+		try:	
+			temps = get_temps()
+			y[419,:] = temps
+		except: 
+			time.sleep(5)
+			print('timeout occured')
 		
 		k = 0 #intiialize a counter
 		
 		plt.subplot(gs[0:2,:]) #create top subplot 
 		for j in plots: #plot all of the temperatures with appropriate labels
-			#print(y[419,j])
 			plt.semilogy(x,y[:,j],color = colors[np.mod(j,7)],linestyle = lines[j/7],linewidth = 2, label = labels[k]+" " +str(y[419,j])[0:5]+"K")
 			if i != 0:
 				legend.get_texts()[k].set_text(labels[k]+" " +str(y[419,j])[0:5]+"K") #if it is not the first time ploting rewrite the legend with the new temps
@@ -148,18 +137,6 @@ try: #allows you to kill the loop with ctrl c
 		plt.ylim(0,30)
 		
 		
-		#plot pressure
-		plt.subplot(gs[3,:])
-		plt.semilogy(x,press_y, color = 'b', linestyle = '-', linewidth = 2, label = 'Pressure ' + str(press_y[419,0]) + ' mbar')
-		if i!=0:
-			legend_press.get_texts()[0].set_text('Pressure ' + str(press_y[419,0]) + ' mbar')
-		if i==0:
-			legend_press= plt.legend(ncol = 1, loc = 2)
-		plt.xlim(x[0],x[419])
-		plt.ylim((1*10**-6),1)
-		
-		plt.draw() #update the plot
-			
 		
 
 		#Alarm function
@@ -190,7 +167,6 @@ try: #allows you to kill the loop with ctrl c
 		if i == 0: #if it is the first time writing to file put in a header
 			# not sure this header is up to date also need to add header if a new day has started
 			print('#Human readable time. Time (s) since start. Lakeshore temperature sensor 218 T1,2,3,4,5,6,8 and 224 C2,C3,C4,C5,D1,D2,D3,D4,D5,A,B',file=f)
-			print('#Human readable time. Time (s) since start. Pressure (torr).', file = p)
 			print('#Human readable time. Time (s) since start. V @ ag47t. A @ ag47t. V @ ag47b. A @ ag47b. V @ ag49. A @ ag49.', file=g)
 		
 		# write temps to file
@@ -200,13 +176,6 @@ try: #allows you to kill the loop with ctrl c
 			print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(y[419, k]))
 			
 			
-		
-		
-		# write press to file
-		 
-		print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(press_y[419,0])+' ', file = p) #print the temperature and some nonsense numbers to the file
-		# write to command prompt
-		print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(press_y[419, 0]))	
 		
 		#print the current and voltage to the file
 		volt_str = ''
@@ -228,6 +197,8 @@ try: #allows you to kill the loop with ctrl c
 except KeyboardInterrupt: #if you press ctrl c quit
     pass
 
+name = date_str  + ' plot'	
+savefig(name, bbox_inches='tight')	
 f.close() #close the file
 
 print("Monitoring disabled")
