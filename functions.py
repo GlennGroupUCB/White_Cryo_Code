@@ -2,13 +2,11 @@ import numpy as np
 import visa
 import serial
 import serial.tools.list_ports
-import time
+
 #added
 import matplotlib
 matplotlib.use('qt4agg')#need for continuously updating plot
-import matplotlib.pyplot as plt
-import smtplib
-import matplotlib.gridspec as gridspec
+
 
 #Contains function which read pressure, temperture, voltage and current from intruments as well as plotting and writing to file.
 #designed to be implemented in Temp_monitor.py

@@ -22,10 +22,10 @@ with open('2017-05-16_10_44_temps.txt','r') as f:
              str = line
              x = str.split()
     
-             if 469 < float(x[2]) < 9300:
+             #if 469 < float(x[2]) < 9300:
              #if 9300 < float(x[2]) < 17000:
              #if 17500 < float(x[2]) < 24000:
-             #if 24500 < float(x[2]) < 90000:
+             if 24500 < float(x[2]) < 100000:
                  #print(x[2])
                  b.append(x[6])
                  t.append(x[2])
@@ -47,21 +47,17 @@ with open('2017-05-16_10_44_temps.txt','r') as f:
 b = np.array(b, dtype = float)
 t = np.array(t, dtype = float) - float(t[0])
 
-guess = (26.7, 1e-6, 6)
+guess = (10, 1e-6, -38)
+
 
 def expo_fnc(t, A, k, c):
     return A-c*np.exp(-k*t)
-
-'''    
-def expo_fnc(t, A, k, c):
-    return A+c*np.exp(-k*t)+c
- '''   
-    
+ 
 
 popt, pcov = curve_fit(expo_fnc, t, b, guess)
 
 y = expo_fnc(t, *popt)
-#print(popt)
+
 tau = 1/popt[1]
 print(tau)
 
