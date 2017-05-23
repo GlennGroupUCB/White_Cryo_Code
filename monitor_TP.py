@@ -8,7 +8,7 @@ import datetime
 import os
 import smtplib
 from scipy import interpolate
-from functions import read_power_supplies, get_temps, get_press, initialize
+from functions import read_power_supplies, get_temps, initialize
 import matplotlib.gridspec as gridspec
 
 #Program to monitor and plot only temperature, voltage and current
@@ -17,7 +17,7 @@ import matplotlib.gridspec as gridspec
 #CHANGE LOG
 #5/22/17 Started
 
-#TO DO 
+#TO DO
 
 RX202_lookup = np.loadtxt('RX-202A Mean Curve.tbl')#202 ADR sensor look up table
 #RX202_lookup = np.loadtxt('RX-102A Mean Curve.tbl') #102 300mK/ 1K sensors
@@ -62,12 +62,12 @@ plt.show()
 start = time.time() #define a start time
 if os.path.isfile(file_prefix + '_temps.txt') == True: #check if there is already a file with the prefix we are trying to use
 	#If a file already exists add a suffix to the end that consist of the time it was created so it can be distinguished from the original file
-	file_suffix = '_'+str(datetime.datetime.now())[11:13]+'_'+str(datetime.datetime.now())[14:16] 
+	file_suffix = '_'+str(datetime.datetime.now())[11:13]+'_'+str(datetime.datetime.now())[14:16]
 f = open(file_prefix + file_suffix +'_temps.txt' ,'w') #open a file to write the temperatures to
 
-if os.path.isfile(file_prefix2 + '_VI.txt') == True: 
-	file_suffix2 = '_'+str(datetime.datetime.now())[11:13]+'_'+str(datetime.datetime.now())[14:16] 
-g = open(file_prefix2 + file_suffix2 +'_VI.txt' ,'w') 
+if os.path.isfile(file_prefix2 + '_VI.txt') == True:
+	file_suffix2 = '_'+str(datetime.datetime.now())[11:13]+'_'+str(datetime.datetime.now())[14:16]
+g = open(file_prefix2 + file_suffix2 +'_VI.txt' ,'w')
 
 
 i = 0 #initialize a counter
@@ -80,50 +80,50 @@ try: #allows you to kill the loop with ctrl c
 			file_prefix =  "C:/Users/tycho/Desktop/White_Cryo_Code/Temps/" + date_str
 			file_suffix = ''
 			file_prefix2 =  "C:/Users/tycho/Desktop/White_Cryo_Code/Voltage_Current/" + date_str
-			
-			
+
+
 			f = open(file_prefix + file_suffix +'_temps.txt' ,'w') #open a new file to write the temperatures to
-			g = open(file_prefix2 + file_suffix +'_VI.txt' ,'w') 
-			
-			
-			
+			g = open(file_prefix2 + file_suffix +'_VI.txt' ,'w')
+
+
+
 		t = time.time()-start #current time
 		x = np.roll(x,-1) #shift the time array by 1 interval
 		x[419] = t/60. #record current time to last position of time array
 		y = np.roll(y,-1,axis = 0) # shift temperature array by 1 interval
 		volt_y = np.roll(volt_y,-1,axis = 0) #shift voltage array by 1 interval
 		curr_y = np.roll(curr_y,-1,axis = 0) #shift current array by 1 interval
-	
-		#grab temperatures and store them to the temperature array	
-		
-		try:	
+
+		#grab temperatures and store them to the temperature array
+
+		try:
 			temps = get_temps()
 			y[419,:] = temps
-		except: 
+		except:
 			time.sleep(5)
 			print('timeout occured')
-		
+
 		k = 0 #intiialize a counter
-		
-		plt.subplot(gs[0:2,:]) #create top subplot 
+
+		plt.subplot(gs[0:2,:]) #create top subplot
 		for j in plots: #plot all of the temperatures with appropriate labels
 			plt.semilogy(x,y[:,j],color = colors[np.mod(j,7)],linestyle = lines[j/7],linewidth = 2, label = labels[k]+" " +str(y[419,j])[0:5]+"K")
 			if i != 0:
 				legend.get_texts()[k].set_text(labels[k]+" " +str(y[419,j])[0:5]+"K") #if it is not the first time ploting rewrite the legend with the new temps
 			k = k+1
-			
-		if i == 0:	#if it is the first time ploting generate the legend				
-			legend = plt.legend(ncol = 2,loc =2)
+
+		if i == 0:	#if it is the first time ploting generate the legend
+			legend = plt.legend(ncol = 4,loc ='upper center', bbox_to_anchor=(0.5, 1.05), fancybox=True, shadow=True)
 		plt.xlim(x[0],x[419])
 		plt.ylim(0.1,300)
-		
+
 		#grab voltages and current from power supplies
 		power_labels, volt, curr = read_power_supplies()
 		volt_y[419,:]= volt
 		curr_y[419,:]= curr
-		
-			
-		# plot the power levels	
+
+
+		# plot the power levels
 		plt.subplot(gs[2,:])
 		k = 0
 		for j in range(0,len(volt)):
@@ -132,12 +132,12 @@ try: #allows you to kill the loop with ctrl c
 				legend_power.get_texts()[k].set_text(power_labels[j]+" " +str(volt_y[419,j])[0:4]+"V "+ str(curr_y[419,j])[0:6]+"A")#if it is not the first time ploting rewrite the legend with the new temps
 			k = k+1
 		if i ==0:
-			legend_power= plt.legend(ncol = 2,loc = 2)	 #If it is the first time plotting generate the legend	
+			legend_power= plt.legend(ncol = 2,loc = 'upper center', fancybox=True, shadow=True, bbox_to_anchor(0.5, 1.05))	 #If it is the first time plotting generate the legend
 		plt.xlim(x[0],x[419])
 		plt.ylim(0,30)
-		
-		
-		
+
+
+
 
 		#Alarm function
 		if Alarm != 0: #if the alarm is turned on proceed
@@ -160,45 +160,45 @@ try: #allows you to kill the loop with ctrl c
 					server.sendmail(fromaddr, toaddrs, msg)
 					toaddrs  = '5308487272@pm.sprint.com'
 					server.sendmail(fromaddr, toaddrs, msg)
-					server.quit()	
+					server.quit()
 				Alarm = 2 #Alarm on but already triggered
-				
-				
+
+
 		if i == 0: #if it is the first time writing to file put in a header
 			# not sure this header is up to date also need to add header if a new day has started
-			print('#Human readable time. Time (s) since start. Lakeshore temperature sensor 218 T1,2,3,4,5,6,8 and 224 C2,C3,C4,C5,D1,D2,D3,D4,D5,A,B',file=f)
+			print('#Human readable time. Time (s) since start. Lakeshore temperature sensor 218 T1,2,3,4,5,6,7,8 and 224 C2,C3,C4,C5,D1,D2,D3,D4,D5,A,B',file=f)
 			print('#Human readable time. Time (s) since start. V @ ag47t. A @ ag47t. V @ ag47b. A @ ag47b. V @ ag49. A @ ag49.', file=g)
-		
+
 		# write temps to file
 		print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(y[419,0])+' '+ str(y[419,1])+' '+ str(y[419,2])+' '+ str(y[419,3])+' '+ str(y[419,4])+' '+ str(y[419,5])+' '+ str(y[419,6])+' '+ str(y[419,7])+' '+ str(y[419,8])+' '+ str(y[419,9])+' '+ str(y[419,10])+' '+ str(y[419,11])+' '+ str(y[419,12])+' '+ str(y[419,13])+' '+ str(y[419,14])+' '+ str(y[419,15])+' '+ str(y[419,16])+' '+ str(y[419,17])+' ', file = f) #print the temperature and some nonsense numbers to the file
-		for k in range(0,len(temps)): 
+		for k in range(0,len(temps)):
 			# write to command prompt
 			print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(y[419, k]))
-			
-			
-		
+
+
+
 		#print the current and voltage to the file
 		volt_str = ''
-		for k in range(0, len(volt)): 
+		for k in range(0, len(volt)):
 			volt_str = volt_str + str(volt_y[419,k])
 			if k!=len(volt)-1:
 				volt_str = volt_str + ","
-			#print(str(volt_y[419, k])+'V '+str(curr_y[419, k])+'I ', file = g) 
-			
+			#print(str(volt_y[419, k])+'V '+str(curr_y[419, k])+'I ', file = g)
+
 			# write to command prompt
 			print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(volt_y[419, k])+' '+ str(curr_y[419, k]))
 		print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ volt_str,file = g)
 		#time.sleep(sleep_interval)#sleep for 60 second
 		plt.pause(sleep_interval) # pause for sleep interval before looping again
-		
+
 		i = i + 1 #icrement the counter
-				
-		
+
+
 except KeyboardInterrupt: #if you press ctrl c quit
     pass
 
-name = date_str  + ' plot'	
-savefig(name, bbox_inches='tight')	
+name = date_str  + ' plot'
+savefig(name, bbox_inches='tight')
 f.close() #close the file
 
 print("Monitoring disabled")

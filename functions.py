@@ -24,29 +24,29 @@ def initialize():
 	colors = ['b','g','r','c','m','y','k']
 
 	#labels for the thermometers extra space is so the numbers all line up. might be a better way to add the space
-	labels = ['4K P.T.               ','4K HTS             ','50K HTS           ','Black Body       ','50K P.T.            ','50K Plate         ','ADR Shield      ','4He Pump        ','3He Pump        ','4He Switch        ','3He Switch        ','300 mK Shield   ','ADK Switch        ','4-1K Switch       ','1K Shield           ','4K Plate           ','3He Head          ','4He Head          ','ADR                   ']
+	labels = ['4K P.T.               ','4K HTS             ','50K HTS           ','Black Body       ','50K P.T.            ','50K Plate         ','ADR Shield      ','4He Pump        ','3He Pump        ','4He Switch        ','3He Switch        ','300 mK Shield   ','ADR Switch        ','4-1K Switch       ','1K Shield           ','4K Plate           ','3He Head          ','4He Head          ','ADR                   ']
 
 
 	#allows you to not plot ugly thermometers
-	plots = (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17)
-	
+	plots = (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18)
+
 	return lines, colors, labels, plots
 
 
 
-	
+
 #create a resourcemanager and see what instruments the computer can talk to
 #path = os.path.normpath("C:/Program Files/IVI Foundation/VISA/Win64/Lib_x64/msc/visa64.lib")
 rm = visa.ResourceManager()
 print rm.list_resources()
-	
+
 def get_press():
 	# Connect to Pressure Gauge (900USB-1 @ COM7)
 	ser = serial.Serial( 		#initialize
-	port = 'COM7',	
+	port = 'COM7',
 	baudrate = 115200,
 	parity=serial.PARITY_NONE,
-	stopbits=serial.STOPBITS_ONE, 
+	stopbits=serial.STOPBITS_ONE,
 	bytesize=serial.EIGHTBITS,
 	timeout= 2
 	)
@@ -56,12 +56,12 @@ def get_press():
 		#print("connected to: ")
 		#print(ser.portstr)
 		#ser.write('@254AD?;FF')		#finds device address '253'
-		
+
 		#pressdata = ser.read(10)	#read 10 lines of data
 		#line = ser.readline()
 		#print(pressdata)
 		#print(line)
-		
+
 		#ser.write('@253PR1?;FF') #non combined reading
 		#line = ser.readline()
 		#print(line)
@@ -80,7 +80,7 @@ def get_press():
 				#print pow
 		mBar = float(line[s:e])*1.33322*10**pow	#final combined pressure in mbar
 		print('Pressure: ' + str(mBar) + ' mbar')
-		
+
 
 	else:
 		print "COM7 is not open"
@@ -109,7 +109,7 @@ def get_temps():
 	y[ 4] = lk218_T5 = float(lk218.query('KRDG?5'))
 	y[ 5] = lk218_T6 = float(lk218.query('KRDG?6'))
 	y[ 6] = lk218_T8 = float(lk218.query('KRDG?8'))
-	
+
 	y[ 7] = lk224_TC2 = float(lk224.query('KRDG? C2'))
 	y[ 8] = lk224_TC3 = float(lk224.query('KRDG? C3'))
 	y[ 9] = lk224_TC4 = float(lk224.query('KRDG? C4'))
@@ -119,10 +119,10 @@ def get_temps():
 	y[ 13] = lk224_TD3 = float(lk224.query('KRDG? D3'))
 	y[ 14] = lk224_TD4 = float(lk224.query('KRDG? D4'))
 	y[ 15] = lk224_TD5 = float(lk224.query('KRDG? D5'))
-	
+
 	y[ 16] = lk224_A = float(lk224.query('KRDG? A'))
 	y[ 17] = lk224_B = float(lk224.query('KRDG? B'))
-	
+
 	lr750_a = lr750.query('GET 0')
 	#print(lr750_a)
 	if i == 0: # there is some weirdness where the first call returns an empty string
@@ -138,12 +138,12 @@ def get_temps():
 
 
 # program to let you the current and voltages of the agilent power supplies
-# the program first checks what the set voltage is 
+# the program first checks what the set voltage is
 #if it is set to zero it will just report zero
 #other wise you get some non sensical readings for current
 #If the voltage is actually set to something then in measures both the voltage and the current
-# written by Jordan Wheeler 
-# date: 12/9/2016	
+# written by Jordan Wheeler
+# date: 12/9/2016
 def read_power_supplies():
 
 	labels = ("He4 pump", "He3 pump", "He4 switch", "He3 switch", "ADR switch", "4K 1K switch")
@@ -152,7 +152,7 @@ def read_power_supplies():
 	rm = visa.ResourceManager()
 	ag47t = rm.open_resource('GPIB0::15::INSTR')
 	ag47b = rm.open_resource('GPIB0::5::INSTR')
-	ag49 = rm.open_resource('GPIB0::3::INSTR') 
+	ag49 = rm.open_resource('GPIB0::3::INSTR')
 
 	volt = np.zeros(6)
 	curr = np.zeros(6)
@@ -225,4 +225,3 @@ labels, volt, curr = read_power_supplies()
 
 for i in range(0,len(volt)):
 	print(labels[i]+" " +str(volt[i])[0:4] + "V  "+ str(curr[i])[0:6]+ "A")
-	
