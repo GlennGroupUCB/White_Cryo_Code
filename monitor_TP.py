@@ -132,7 +132,7 @@ try: #allows you to kill the loop with ctrl c
 				legend_power.get_texts()[k].set_text(power_labels[j]+" " +str(volt_y[419,j])[0:4]+"V "+ str(curr_y[419,j])[0:6]+"A")#if it is not the first time ploting rewrite the legend with the new temps
 			k = k+1
 		if i ==0:
-			legend_power= plt.legend(ncol = 2,loc = 'upper center', fancybox=True, shadow=True, bbox_to_anchor(0.5, 1.05))	 #If it is the first time plotting generate the legend
+			legend_power = plt.legend(ncol = 2,loc = 2, fancybox=True, shadow=True)	 #If it is the first time plotting generate the legend
 		plt.xlim(x[0],x[419])
 		plt.ylim(0,30)
 
