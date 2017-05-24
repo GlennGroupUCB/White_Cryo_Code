@@ -2,10 +2,15 @@ from __future__ import print_function
 import numpy as np
 import visa
 import matplotlib
+matplotlib.use('qt4agg')
+import matplotlib.pyplot as plt
+import time
 import datetime
 import os
-import time
+import smtplib
+import matplotlib.gridspec as gridspec
 from functions import read_power_supplies, get_temps, initialize
+from scipy import interpolate
 
 #########################################################
 #      Program to cycle the Chase fridge                #
@@ -80,6 +85,7 @@ g = open(file_prefix2 + file_suffix2 +'_VI_fridgecycle.txt' ,'w')
 
 
 i = 0 #initialize a counter
+k = 0
 try: #allows you to kill the loop with ctrl c
 	while True: #Just loop for every never stopping the monitoring of the temperatures
 		now = datetime.datetime.now()
@@ -105,7 +111,7 @@ try: #allows you to kill the loop with ctrl c
 
 		#grab temperatures and store them to the temperature array
 		temps = get_temps()
-		y = temps
+		y[419,:] = temps
 
 		lk218_T1 = y[419,0]
 		lk218_T2 = y[419,1]
@@ -238,7 +244,7 @@ try: #allows you to kill the loop with ctrl c
 		minutes = int(t/60)
 		if seconds >= 60:
 			seconds = int(t-(60*minutes))
-		print('Cycle duration: minutes, ':', seconds)
+		print('Cycle duration: ',minutes, ':', seconds)
 
 		k = 0 #intiialize a counter
 
@@ -250,7 +256,7 @@ try: #allows you to kill the loop with ctrl c
 			k = k+1
 		#if it is the first time ploting generate the legend
 		if i == 0:
-			legend = plt.legend(ncol = 2,loc = 1, bbox_to_anchor=(0.5, 1.5), fancybox=True, shadow=True)
+			legend = plt.legend(ncol = 2,loc = 1, bbox_to_anchor=(0.2, 1.15), fancybox=True, shadow=True)
 		plt.xlim(x[0],x[419])
 		plt.ylim(0.1,300)
 
@@ -269,7 +275,7 @@ try: #allows you to kill the loop with ctrl c
 				legend_power.get_texts()[k].set_text(power_labels[j]+" " +str(volt_y[419,j])[0:4]+"V "+ str(curr_y[419,j])[0:6]+"A")#if it is not the first time ploting rewrite the legend with the new temps
 			k = k+1
 		if i ==0:
-			legend_power= plt.legend(ncol = 2,loc = 'upper center', fancybox=True, shadow=True, bbox_to_anchor(0.5, 1.05))	 #If it is the first time plotting generate the legend
+			legend_power= plt.legend(ncol = 2,loc = 2, fancybox=True, shadow=True)	 #If it is the first time plotting generate the legend
 		plt.xlim(x[0],x[419])
 		plt.ylim(0,30)
 

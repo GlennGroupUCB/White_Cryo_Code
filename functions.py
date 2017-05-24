@@ -116,7 +116,7 @@ def get_temps():
 	y[ 10] = lk224_TC5 = float(lk224.query('KRDG? C5'))
 	y[ 11] = lk224_TD1 = float(lk224.query('KRDG? D1'))
 	y[ 12] = lk224_TD2 = float(lk224.query('KRDG? D2'))
-	y[ 13] = lk224_TD3 = float(lk224.query('KRDG? D3'))
+	y[ 13] = lk224_TD3 = float(lk224.query('KRDG? D3'))                                       ▬
 	y[ 14] = lk224_TD4 = float(lk224.query('KRDG? D4'))
 	y[ 15] = lk224_TD5 = float(lk224.query('KRDG? D5'))
 
@@ -124,16 +124,14 @@ def get_temps():
 	y[ 17] = lk224_B = float(lk224.query('KRDG? B'))
 
 	lr750_a = lr750.query('GET 0')
-	#print(lr750_a)
-	if i == 0: # there is some weirdness where the first call returns an empty string
-		lr750_a_temp = -1
-	if i != 0:
-		try: #every once in a while this fails
-			lr750_a_num = np.float(lr750_a[0:8])
-			#print(lr750_a_num)
-			y[ 18] = lr750_a_temp = RX202_interp(-lr750_a_num*1000)
-		except:
+	
+	try: #every once in a while this fails
+		lr750_a_num = np.float(lr750_a[0:8])
+			print(lr750_a_num)
+		y[ 18] = lr750_a_temp = RX202_interp(-lr750_a_num*1000)
+	except:
 			y[ 18] = lr750_a_temp = -1.
+	
 	return y
 
 
