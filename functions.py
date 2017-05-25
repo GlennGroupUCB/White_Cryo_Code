@@ -2,6 +2,8 @@ import numpy as np
 import visa
 import serial
 import serial.tools.list_ports
+from scipy import interpolate
+
 
 #added
 import matplotlib
@@ -16,6 +18,10 @@ matplotlib.use('qt4agg')#need for continuously updating plot
 # 03/10/17 - Added get_press() to read and return pressure from 972B DualMag Transducer - Tim
 # 03/15/17 - Changed timeout of get_press() to 0.1 sec to minimize delay. Can't go under 0.1 sec without throwing error - Tim
 # 04/10/17 - added plot_and_write() function for use with fast monitor - Tim
+
+RX202_lookup = np.loadtxt('RX-202A Mean Curve.tbl')#202 ADR sensor look up table
+RX202_interp = interpolate.interp1d(RX202_lookup[:,1], RX202_lookup[:,0],fill_value = 0.,bounds_error = False) # interpolates the temperature when in between lookup table values
+
 
 #initializes plot resources for temperature
 def initialize():
@@ -109,14 +115,13 @@ def get_temps():
 	y[ 4] = lk218_T5 = float(lk218.query('KRDG?5'))
 	y[ 5] = lk218_T6 = float(lk218.query('KRDG?6'))
 	y[ 6] = lk218_T8 = float(lk218.query('KRDG?8'))
-
 	y[ 7] = lk224_TC2 = float(lk224.query('KRDG? C2'))
 	y[ 8] = lk224_TC3 = float(lk224.query('KRDG? C3'))
 	y[ 9] = lk224_TC4 = float(lk224.query('KRDG? C4'))
 	y[ 10] = lk224_TC5 = float(lk224.query('KRDG? C5'))
 	y[ 11] = lk224_TD1 = float(lk224.query('KRDG? D1'))
 	y[ 12] = lk224_TD2 = float(lk224.query('KRDG? D2'))
-	y[ 13] = lk224_TD3 = float(lk224.query('KRDG? D3'))                                       ▬
+	y[ 13] = lk224_TD3 = float(lk224.query('KRDG? D3'))                                       
 	y[ 14] = lk224_TD4 = float(lk224.query('KRDG? D4'))
 	y[ 15] = lk224_TD5 = float(lk224.query('KRDG? D5'))
 
@@ -124,13 +129,15 @@ def get_temps():
 	y[ 17] = lk224_B = float(lk224.query('KRDG? B'))
 
 	lr750_a = lr750.query('GET 0')
+	print(lr750_a)
 	
 	try: #every once in a while this fails
 		lr750_a_num = np.float(lr750_a[0:8])
-			print(lr750_a_num)
+		print(lr750_a_num)
 		y[ 18] = lr750_a_temp = RX202_interp(-lr750_a_num*1000)
 	except:
-			y[ 18] = lr750_a_temp = -1.
+		y[ 18] = lr750_a_temp = -1.
+		print
 	
 	return y
 
