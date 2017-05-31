@@ -182,7 +182,7 @@ try: #allows you to kill the loop with ctrl c
 		for k in range(0, len(volt)):
 			volt_str = volt_str + str(volt_y[419,k])
 			if k!=len(volt)-1:
-				volt_str = volt_str + ","
+				volt_str = volt_str + " "
 			#print(str(volt_y[419, k])+'V '+str(curr_y[419, k])+'I ', file = g)
 
 			# write to command prompt
