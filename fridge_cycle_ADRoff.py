@@ -139,7 +139,6 @@ try: #allows you to kill the loop with ctrl c
 		#the way I am doing it is a bit weird we are just continously looping
 		#and excuting certain fridge steps if the time is appropriate
 		#rather than just do things step by step.
-		#step 1 is open (heat) the ADR switch
 
 
 		#Heat up the 4He pump
@@ -300,11 +299,11 @@ try: #allows you to kill the loop with ctrl c
 
 		if i == 0: #if it is the first time writing to file put in a header
 			# not sure this header is up to date also need to add header if a new day has started
-			print('#Human readable time. Time (s) since start. Lakeshore temperature sensor 218 T1,2,3,4,5,6,7,8 and 224 C2,C3,C4,C5,D1,D2,D3,D4,D5,A,B',file=f)
+			print('#Human readable time. Time (s) since start. Lakeshore temperature sensor 218 T1,2,3,4,5,6,8 and 224 C2,C3,C4,C5,D1,D2,D3,D4,D5,A,B, LR750',file=f)
 			print('#Human readable time. Time (s) since start. V @ ag47t. A @ ag47t. V @ ag47b. A @ ag47b. V @ ag49. A @ ag49.', file=g)
 
 		# write temps to file
-		print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(y[419,0])+' '+ str(y[419,1])+' '+ str(y[419,2])+' '+ str(y[419,3])+' '+ str(y[419,4])+' '+ str(y[419,5])+' '+ str(y[419,6])+' '+ str(y[419,7])+' '+ str(y[419,8])+' '+ str(y[419,9])+' '+ str(y[419,10])+' '+ str(y[419,11])+' '+ str(y[419,12])+' '+ str(y[419,13])+' '+ str(y[419,14])+' '+ str(y[419,15])+' '+ str(y[419,16])+' '+ str(y[419,17])+' ', file = f) #print the temperature and some nonsense numbers to the file
+		print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(y[419,0])+' '+ str(y[419,1])+' '+ str(y[419,2])+' '+ str(y[419,3])+' '+ str(y[419,4])+' '+ str(y[419,5])+' '+ str(y[419,6])+' '+ str(y[419,7])+' '+ str(y[419,8])+' '+ str(y[419,9])+' '+ str(y[419,10])+' '+ str(y[419,11])+' '+ str(y[419,12])+' '+ str(y[419,13])+' '+ str(y[419,14])+' '+ str(y[419,15])+' '+ str(y[419,16])+' '+ str(y[419,17])+' ', str(y[419,18]), file = f) #print the temperature and some nonsense numbers to the file
 		for k in range(0,len(temps)):
 			# write to command prompt
 			print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(y[419, k]))

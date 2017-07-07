@@ -99,9 +99,9 @@ def get_press():
 
 def get_temps():
 	#form connections to the two lakeshore temperature, and one resistance devices available
-	lk224 = rm.open_resource('GPIB0::12::INSTR') #lakeshore 224
-	lk218 = rm.open_resource('GPIB0::2::INSTR') #lakeshore 218
-	lr750 = rm.open_resource('GPIB0::4::INSTR') #linear bridge
+	lk224 = rm.open_resource('GPIB0::12::INSTR', timeout=5) #lakeshore 224
+	lk218 = rm.open_resource('GPIB0::2::INSTR',timeout=5) #lakeshore 218
+	lr750 = rm.open_resource('GPIB0::4::INSTR', timeout=5) #linear bridge
 
 	#double check that you've connected to the lakeshore temperature sensors by asking them their 		names
 	#print(lk218.query('*IDN?'))

@@ -50,7 +50,7 @@ def main():
 		figure, ax = plt.subplots()
 
 	#filelist = "./Temps/2017-05-24_temps.txt,./Temps/2017-05-25_temps.txt"
-	#filelist = "./Temps/2017-05-24_temps.txt"
+	#filelist = "./Temps/2017-07-06_temps.txt"
 	#filelist2= "./Voltage_Current/2017-05-24_VI.txt,./Voltage_Current/2017-05-25_VI.txt"
 	#filelist2= "./Voltage_Current/2017-05-24_VI.txt"
 
@@ -59,7 +59,7 @@ def main():
 	y = []
 
 	#if filelist isnt empty:
-	if filelist != '':
+	if filelist != ' ':
 		#if only one file is given:
 		if filelist.find(',')==-1:
 			#load file, skip first row(header), read columns 2-21
@@ -101,6 +101,8 @@ def main():
 			p15, = ax.plot(x[15],y[15], lw=2, c = tableau20[15])
 			p16, = ax.plot(x[16],y[16], lw=2, c = tableau20[16])
 			p17, = ax.plot(x[17],y[17], lw=2, c = tableau20[17])
+			#comment 18 out if you don't have ADR data
+			#p18, = ax.plot(x[18],y[18], lw=2, c = tableau20[0])
 
 		#more than one file given
 		else:
