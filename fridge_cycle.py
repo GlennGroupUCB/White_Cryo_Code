@@ -20,6 +20,8 @@ from scipy import interpolate
 
 #CHANGE LOG
 
+menu()
+time.sleep(sleep_time)
 
 #create a resourcemanager and see what instruments the computer can talk to
 rm = visa.ResourceManager()
@@ -144,13 +146,14 @@ try: #allows you to kill the loop with ctrl c
 		# ADR heat switch want to leave open so that the 1K head can cool the ADR
 		# but turn off before cycle ADR
 		# doesn't cool well if the 4K-1K switch is not on and the film burner is hot
-		if t>120*60 and t<180*60: #70,800
-			ag49.write('INST:SEL OUT1')
-			ag49.write('Volt 1.5')#3.5 #Afyhrie changed from 1.75 to 1.5 on June 28 2017
-			#to make sure the ADR switch doesn't heat above 17 K
-		else:
-			ag49.write('INST:SEL OUT1')
-			ag49.write('Volt 0')
+		if adrOn == 'Y':
+			if t>120*60 and t<180*60: #70,800
+				ag49.write('INST:SEL OUT1')
+				ag49.write('Volt 1.5')#3.5 #Afyhrie changed from 1.75 to 1.5 on June 28 2017
+				#to make sure the ADR switch doesn't heat above 17 K
+			elif t>180*60 and t<181*60:
+				ag49.write('INST:SEL OUT1')
+				ag49.write('Volt 0')
 
 		#Heat up the 4He pump
 		if t>0*60 and t<50*60:
@@ -342,6 +345,15 @@ try: #allows you to kill the loop with ctrl c
 except KeyboardInterrupt:
     pass
 
-
+def menu():
+	global adrOn
+	global sleep_time
+	userInput = raw_input('Enter time till start: ("hours","minutes")')
+	hours_minutes = userInput.split(',')
+	hrs = hours_minutes[0]
+	mnts = hours_minutes[1]
+	sleep_time = int(hrs)*3600 + mnts*60
+	adrOn = raw_input('Cycle ADR? "Y" or "N": ')
+	#return sleep_time
 
 print("Human interupted the fridge cycle")
