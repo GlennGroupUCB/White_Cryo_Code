@@ -5,14 +5,20 @@ from functions import get_temps
 from Tkinter import *
 
 #Created by Tim Childers 17/07/2017
+#TO DO:
 
 '''
 READ ME:
+ALWAYS ALWAYS query the AMI before sending any command to ensure:
+    1. Units are in A/minute
+    2. The serial is responsive and won't timeout
+    3. Other parameters are set correctly (max V, etc.)
 To run, first set parameters in the SETTINGS section.
+QUERY
 Once paramaters are set, click EXECUTE to send ramping command to ami
-The STOP command will start the Zero function of the AMI, which zeroes
-at the previously set ramp rate.
+The STOP command will ramp down to zero at 0.5 A/min.
 Please only set one ramp rate at a time, either up or down.
+To change ramp rate, first PAUSE the current ramping function and then start again.
 The Status command queries the AMI
 
 '''
@@ -20,6 +26,7 @@ The Status command queries the AMI
 rU = False
 rD = False
 running = False
+dIdt = 0
 
 ami = serial.Serial('ami', 115200, rtscts=1)
 
@@ -28,86 +35,105 @@ def stop():
     global running
     running = False
     ami.write('CONF:RAMPD:RATE:CURR 1,0.50,0\n')
+    ami.write('RAMP\n')
     print 'Powering Down'
 def status():
-    #send querying code to AMI (111 is sum of binary inputs)
-    ami.write('*ETE 111\n')
-    #trigger to send output
-    ami.write('*TRG\n')
-    ami.readline()
+    try:
+        #send querying code to AMI (111 is sum of binary inputs)
+        ami.write('*ETE 111\n')
+        #trigger to send output
+        ami.write('*TRG\n')
+        trg = ami.readline()
+        print trg
 
-    ami.write('RAMP:RATE:UNITS?\n')
-    unit = ami.readline()
-    if unit == 0:
-        print 'Ramp rate is in seconds'
-    if unit == 1:
-        print 'Ramp rate is in minutes'
+        ami.write('RAMP:RATE:UNITS?\n')
+        unit = ami.readline()
+        if unit == 0:
+            print 'Ramp rate is in seconds'
+            print 'DO NOT PROCEED'
+        if unit == 1:
+            print 'Ramp rate is in minutes'
 
-    ami.write('STATE?')
-    state = ami.readline()
-    if state == 1:
-        print 'RAMPING to target current'
-    if state == 2:
-        print 'HOLDING at the target current'
-    if state == 3:
-        print 'PAUSED'
-    if state == 4:
-        print 'Ramping in MANUAL UP mode'
-    if state == 5:
-        print 'Ramping in MANUAL DOWN mode'
-    if state == 6:
-        print 'ZEROING CURRENT'
-    if state == 7:
-        print 'Quench Detected'
-    if state == 8:
-        print 'At ZERO current'
-    if state == 9:
-        print 'Heating persistent switch'
-    if state == 10:
-        print 'Cooling persistent switch'
+        ami.write('STATE?')
+        state = ami.readline()
+        if state == 1:
+            print 'RAMPING to target current'
+        if state == 2:
+            print 'HOLDING at the target current'
+        if state == 3:
+            print 'PAUSED'
+        if state == 4:
+            print 'Ramping in MANUAL UP mode'
+        if state == 5:
+            print 'Ramping in MANUAL DOWN mode'
+        if state == 6:
+            print 'ZEROING CURRENT'
+        if state == 7:
+            print 'Quench Detected'
+        if state == 8:
+            print 'At ZERO current'
+        if state == 9:
+            print 'Heating persistent switch'
+        if state == 10:
+            print 'Cooling persistent switch'
 
 
-    ami.write('VOLT:LIM?\n')
-    print 'Voltage Limit: '
-    ami.readline()
-    ami.write('CURR:TARG?\n')
-    print 'Target: '
-    ami.readline()
-    ami.write('RAMP:RATE:CURR:1\n')
-    print 'Current Ramp Up Rate: '
-    ami.readline()
-    ami.write('RAMPD:RATE:CURR:1\n')
-    print 'Current Ramp Down Rate: '
-    ami.readline()
+        ami.write('VOLT:LIM?\n')
+        vLim = ami.readline()
+        print 'Voltage Limit: '
+        print vLim
 
+        ami.write('CURR:TARG?\n')
+        targ = ami.readline()
+        print 'Target: '
+        print targ
+
+        ami.write('RAMP:RATE:CURR:1?\n')
+        rrCur = ami.readline()
+        print 'Current Ramp Up Rate: '
+        print rrCur
+        ami.write('RAMPD:RATE:CURR:1?\n')
+        rdCur = ami.readline()
+        print 'Current Ramp Down Rate: '
+        print rdCur
+
+    except:
+        print 'Unable to query AMI, do not proceed'
 def start():
     global running
-    print 'Starting ADR'
+    '''
     if running:
         running = False
+    '''
+    ami.write('RAMP:RATE:UNITS?\n')
+    unit = ami.readline()
 
-    if check():
+
+    if check()==True and unit ==1: #make sure A/min
         running = True
+        print 'Starting ADR'
         #if ramp up was set
         if rU == True:
-            upCommand = 'CONF:RAMP:RATE:CURR 1,'+uprate+','+target
+            upCommand = 'CONF:RAMP:RATE:CURR 1,'+dIdt+','+target
             #print upCommand
             ami.write(upCommand)
-            print 'Ramping to ' + target + ' I at ' + uprate + ' A/min.'
+            ami.write('RAMP\n')
+            print 'Ramping to ' + target + ' I at ' + dIdt + ' A/min.'
             while running:
                 check()
                 time.sleep(1)
         #if ramp down was selected
         elif rD == True:
-            print 'Ramping to ' + target + ' I at ' + downrate + ' A/min.'
-            downCommand = 'CONF:RAMP:RATE:CURR 1,'+downrate+','+target
+            print 'Ramping to ' + target + ' I at ' + dIdt + ' A/min.'
+            downCommand = 'CONF:RAMP:RATE:CURR 1,'+dIdt+','+target
             #print downCommand
             ami.write(downCommand)
+            ami.write('RAMP\n')
             while running:
                 check()
                 time.sleep(1)
         else:
-            print 'Please set ramp rate and target.'
+            print 'Error: Please Check Settings'
 
 def pause():
     global running
@@ -119,6 +145,8 @@ def pause():
         running = False
         print 'Pausing..'
         ami.write('PAUSE\n')
+        rU = False
+        rD = False
 
 def setV(self):
     #set max Voltage
@@ -137,23 +165,25 @@ def setI(self):
 
 def setUp(self):
     #set increasing ramp rate
-    global uprate
-    uprate = self.rampup.get()
+    global dIdt
+    dIdt = self.rampup.get()
     global rU
     rU = True
     global rD
     rD = False
-    print 'Ramp rate set at: ' + uprate + ' A/min.'
+    print 'Ramp rate set at: ' + dIdt + ' A/min.'
+    dIdt = float(dIdt)/60
 
 def setDown(self):
     #set decreasing ramp rate
-    global downrate
-    downrate = self.rampdown.get()
+    global dIdt
+    dIdt = self.rampdown.get()
     global rU
     rU = False
     global rD
     rD = True
-    print 'Ramp rate set at: -' + downrate + ' A/min.'
+    print 'Ramp rate set at: -' + dIdt + ' A/min.'
+    dIdt = float(dIdt)/60
 
 def setTarget(self):
     #set target current
@@ -210,16 +240,17 @@ def check():
 
 
 def rampRate():
+
     if rU:
         ami.write('RAMP:RATE:CURR: 1?\n')
         strng = ami.readline()
         a = strng.split(',')
-        rate = float(a[0])
+        rate = float(a[0])/60
     elif rD:
         ami.write('RAMPD:RATE:CURR: 1?\n')
         strng = ami.readline()
         a = strng.split(',')
-        rate = float(a[0])
+        rate = float(a[0])/60
     else:
         rate = 0
     return rate

@@ -3,6 +3,7 @@ import visa
 import serial
 import serial.tools.list_ports
 import matplotlib
+from scipy import interpolate
 matplotlib.use('qt4agg')#need for continuously updating plot
 
 
@@ -102,25 +103,41 @@ def get_press():
 def get_temps():
 	y = np.ones(19)*(-1)
 	try:
+		#4K PT
 		y[ 0] = lk218_T1 = float(lk218.query('KRDG?1'))
+		#4K HTS
 		y[ 1] = lk218_T2 = float(lk218.query('KRDG?2'))
+		#50K HTS
 		y[ 2] = lk218_T3 = float(lk218.query('KRDG?3'))
+		#Black Body
 		y[ 3] = lk218_T4 = float(lk218.query('KRDG?4'))
+		#50K PT
 		y[ 4] = lk218_T5 = float(lk218.query('KRDG?5'))
+		#50K Plate
 		y[ 5] = lk218_T6 = float(lk218.query('KRDG?6'))
+		#ADR Shield
 		y[ 6] = lk218_T8 = float(lk218.query('KRDG?8'))
-
+		#He-4 Pump
 		y[ 7] = lk224_TC2 = float(lk224.query('KRDG? C2'))
+		#He-3 Pump
 		y[ 8] = lk224_TC3 = float(lk224.query('KRDG? C3'))
+		#He-4 Switch
 		y[ 9] = lk224_TC4 = float(lk224.query('KRDG? C4'))
+		#He-3 Switch
 		y[ 10] = lk224_TC5 = float(lk224.query('KRDG? C5'))
+		#300mK Shield?
 		y[ 11] = lk224_TD1 = float(lk224.query('KRDG? D1'))
+		#ADR Switch
 		y[ 12] = lk224_TD2 = float(lk224.query('KRDG? D2'))
+		#4K-1K Switch
 		y[ 13] = lk224_TD3 = float(lk224.query('KRDG? D3'))                                       ▬
+		#1K Shield
 		y[ 14] = lk224_TD4 = float(lk224.query('KRDG? D4'))
+		#Spare 4K plate
 		y[ 15] = lk224_TD5 = float(lk224.query('KRDG? D5'))
-
+		#He-3 Head
 		y[ 16] = lk224_A = float(lk224.query('KRDG? A'))
+		#He-4 Head
 		y[ 17] = lk224_B = float(lk224.query('KRDG? B'))
 	except:
 		time.sleep(1)
@@ -131,6 +148,7 @@ def get_temps():
 	try: #every once in a while this fails
 		lr750_a_num = np.float(lr750_a[0:8])
 			print(lr750_a_num)
+		#ADR
 		y[ 18] = lr750_a_temp = RX202_interp(-lr750_a_num*1000)
 	except:
 			y[ 18] = lr750_a_temp = -1.

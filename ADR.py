@@ -1,6 +1,7 @@
 import visa
 import serial
 import time
+import datetime
 from functions import get_temps
 import csv
 import threading
@@ -10,15 +11,16 @@ from Tkinter import *
 
 #To Do:
 #calibrate ramp rates
-#Keep Inductance constant?
 #double check safegaurds
 #ramp down stages
+#check stages of ramping 1 or 2
+#rampRate() make sure ramp rate is not zero
 
 
 '''
 READ ME:
 This script is written to be run with fridge_cycle_ADRoff.py and the ADR switch off.
-It follows Addi's recipe for cooling the ADR down. To run the script using the GUI:
+It follows Addi's recipe for cooling the ADR down, ADR_cycle_soft_heatswitch_on.pdf. To run the script using the GUI:
 1) Set the desired temperature you want the ADR to run at. (This can be changed while running the code.)
 2) Hit Start to begin the script. The ADR switch will be powered at 1.5V until the He-4 and He-3 heads
    equilibrate below 1.1K. It then shuts off the switch and begins the ramping cycle. The ramping cycle
@@ -26,6 +28,9 @@ It follows Addi's recipe for cooling the ADR down. To run the script using the G
    alert the Alarm() and stop() functions if wrong conditions are met.
    The temperature of the ADR is controlled by varying rates of applied current based on distance from
    the desired temp. *These numbers will have to be tweaked later for better results.
+NOTES:
+*   To safegaurd the magnet, the code has a number of try statements whenever there is a serial command that could possibly return an error.
+    If one of these try statements fail, it will call the stop function which will ramp down to zero current at 0.5 A/min and trigger the alarm.
 '''
 
 Alarm = 0
@@ -99,7 +104,8 @@ def main():
             rampU()
         except:
             stop()
-            print 'Error'
+            alarm()
+            print 'Error: Unable to begin ramp Up'
 
     else:
         print 'Please set units to A/min.'
@@ -113,7 +119,7 @@ def switchOn():
         #keep ADR switch on until desired conditions
         try:
             temps = get_temps()
-            if temp[17] < 1.2 and count == 0:
+            if temp[16] and temp[17] < 1.2 and count == 0:
                 #if He4 is below 1.2K turn on ADR switch
                 ag49.write('INST:SEL OUT1')
                 ag49.write('Volt 1.5')
@@ -124,8 +130,8 @@ def switchOn():
             if temp[12] > 10 and count == 1:
                 #wait till switch heats up to signal next step
                 count=2
-            if temps[16] and temps[17] < 1.1 and count == 2:
-                #wait till He3/4 return to normal temp. before switch
+            if temps[18] and temps[17] < 1.15 and count == 2:
+                #wait till He4/ADR return to normal temp. before switch
                 #temps[16] and temps[17] < 1.1. ?????
                 print 'He3/He4 Heads Stabalized'
                 count=3
@@ -137,7 +143,10 @@ def switchOn():
                 break
         except:
             #if get_temps fails, turn off ADR switch to prevent overheating
+            running = False
             switchOff()
+            alarm()
+            print 'Error occured while running Switch ON'
             break
 def switchOff():
     #turn off ADR switch
@@ -151,9 +160,10 @@ def rampU():
     global count
     rampState = 'U'
 
-    if check(rampState) == True and running:
+    if check(rampState) == True and running and count==3:
         #set initial ramp rate to 0.5 A/min to 10A target
         ami.write('CONF:RAMP:RATE:CURR 1,0.5,10\n')
+        ami.write('RAMP\n')
         count=4
         print 'Ramping to 10A at 0.5 A/min'
         #infite loop b/c check becomes driver function
@@ -167,28 +177,38 @@ def rampD():
     global count
     rampState = 'D'
     #ramp down to 1.5A at 0.25 A/min
-    ami.write('CONF:RAMPD:RATE:CURR 1,0.25,1.5\n')
+    #Move this into while loop?
+    if count==6:
+        ami.write('CONF:RAMPD:RATE:CURR 1,0.25,1.5\n')
+        ami.write('RAMP\n')
+        print 'Ramping to 1.5A at -0.25 A/min.'
     count=7
-    print 'Ramping to 1.5A at -0.25 A/min.'
     #try:
     while check(rampState)==True and running:
-        temps = get_temps()
-            #Ramp down to zero at varying rates based on target temp
-            #temp must be converted to float each time b/c Tkinter is not thread-safe
+        #temps = get_temps()
+        #Ramp down to zero at varying rates based on target temp
+        #temp must be converted to float each time b/c Tkinter is not thread-safe
         if  temps[18] > float(temp) + 0.1 :
-            ami.write('CONF:RAMPD:RATE:CURR 2,0.25,0.75\n')
+            ami.write('CONF:RAMPD:RATE:CURR 1,0.25,0.75\n')
+            ami.write('RAMP\n')
         elif float(temp)+0.1 > temps[18] >= float(temp) + 0.05:
-            ami.write('CONF:RAMPD:RATE:CURR 2,0.25,0\n')
+            ami.write('CONF:RAMPD:RATE:CURR 1,0.25,0\n')
+            ami.write('RAMP\n')
         elif float(temp)+ 0.05 > temps[18] >= float(temp) + 0.01:
-            ami.write('CONF:RAMPD:RATE:CURR 2,0.1,0\n')
+            ami.write('CONF:RAMPD:RATE:CURR 1,0.1,0\n')
+            ami.write('RAMP\n')
         elif float(temp)+0.01 > temps[18] >= float(temp) + 0.005:
-            ami.write('CONF:RAMPD:RATE:CURR 2,0.01,0\n')
+            ami.write('CONF:RAMPD:RATE:CURR 1,0.01,0\n')
+            ami.write('RAMP\n')
         elif float(temp)+0.005 > temps[18] >= float(temp) + 0.001:
-            ami.write('CONF:RAMPD:RATE:CURR 2,0.005,0\n')
+            ami.write('CONF:RAMPD:RATE:CURR 1,0.005,0\n')
+            ami.write('RAMP\n')
         elif float(temp)+0.001 > temps[18] >= float(temp) + 0.0005:
-            ami.write('CONF:RAMPD:RATE:CURR 2,0.001,0\n')
+            ami.write('CONF:RAMPD:RATE:CURR 1,0.001,0\n')
+            ami.write('RAMP\n')
         elif float(temp)+0.0005 > temps[18] >= float(temp) + 0.0001:
-            ami.write('CONF:RAMPD:RATE:CURR 2,0.0005,0\n')
+            ami.write('CONF:RAMPD:RATE:CURR 1,0.0005,0\n')
+            ami.write('RAMP\n')
         else:
             ami.write('PAUSE\n')
             time.sleep(1)
@@ -201,6 +221,7 @@ def check(rampState):
     #also driver function for ramping
     global count
     global t
+    global temps
     try:
         t = time.time() - t0
         temps = get_temps()
@@ -218,7 +239,6 @@ def check(rampState):
         writeToFile(volt,curr,L,dIdt,Z)
         #4k HTS
         if temps[1] > 8:
-            Alarm+1
             alarm()
         if temps[1] > 8.5:
             stop()
@@ -234,8 +254,8 @@ def check(rampState):
             stop()
         #turn off ADR switch if He-4 Head and ADR cool to 1.2K, wait 5 minutes from start of ramping
         #wait because initially temperature will be low before switch
-        #Does the ADR heat up He3/4 initially when ramping?
-        if temps[16] and temps[17] < 1.2 and t>5.0*60.0 and count==4:
+        #Does the ADR heat up He4 initially when ramping?
+        if temps[18] and temps[17] < 1.15 and t>5.0*60.0 and count==4:
             count=5
             switchOff()
 
@@ -247,26 +267,34 @@ def check(rampState):
 
         #check magnet resistance
         if Z >= 0.025:
+            print 'Resistance above 0.025 Ohms'
             stop()
             return False
         else:
             return True
     except:
-        print 'Error Occured'
+        print 'Error Occured while checking temp. or resistance.'
         stop()
+        alarm()
         return False
 
 def rampRate(ramp):
-    if ramp == 'U':
-        ami.write('RAMP:RATE:CURR: 1?\n')
-        strng = ami.readline()
-        a = strng.split(',')
-        rate = float(a[0])/60
-    elif ramp == 'D':
-        ami.wrte('RAMPD:RATE:CURR: 1?\n')
-        strng = ami.readline()
-        a = strng.split(',')
-        rate = float(a[0])/60
+    ami.write('STATE?\n')
+    state = ami.readline()
+    #S1: RAMPING to target current'
+    #S4: Ramping in MANUAL UP mode
+    #S5: Ramping in MANUAL DOWN mode
+    if state == 1 or 4 or 5:
+        if ramp == 'U':
+            ami.write('RAMP:RATE:CURR: 1?\n')
+            strng = ami.readline()
+            a = strng.split(',')
+            rate = float(a[0])/60
+        elif ramp == 'D':
+            ami.wrte('RAMPD:RATE:CURR: 1?\n')
+            strng = ami.readline()
+            a = strng.split(',')
+            rate = float(a[0])/60
     else:
         rate = 0
     return rate
@@ -302,6 +330,7 @@ def stop():
     global running
     running = False
     ami.write('CONF:RAMPD:RATE:CURR 1,0.50,0\n')
+    ami.write('RAMP\n')
     print 'Powering Down to 0A at -0.5 A/min.'
 def pause():
     global running
@@ -337,50 +366,53 @@ def start():
 
 
 def status():
-    ami.write('STATE?\n')
-    state = ami.readline()
-    if state == 1:
-        print 'RAMPING to target current'
-    if state == 2:
-        print 'HOLDING at the target current'
-    if state == 3:
-        print 'PAUSED'
-    if state == 4:
-        print 'Ramping in MANUAL UP mode'
-    if state == 5:
-        print 'Ramping in MANUAL DOWN mode'
-    if state == 6:
-        print 'ZEROING CURRENT'
-    if state == 7:
-        print 'Quench Detected'
-    if state == 8:
-        print 'At ZERO current'
-    if state == 9:
-        print 'Heating persistent switch'
-    if state == 10:
-        print 'Cooling persistent switch'
-    ami.write('*ETE 111\n')
-    ami.write('*TRG\n')
-    trigger = ami.readline()
-    print trigger
+    try:
+        ami.write('STATE?\n')
+        state = ami.readline()
+        if state == 1:
+            print 'RAMPING to target current'
+        if state == 2:
+            print 'HOLDING at the target current'
+        if state == 3:
+            print 'PAUSED'
+        if state == 4:
+            print 'Ramping in MANUAL UP mode'
+        if state == 5:
+            print 'Ramping in MANUAL DOWN mode'
+        if state == 6:
+            print 'ZEROING CURRENT'
+        if state == 7:
+            print 'Quench Detected'
+        if state == 8:
+            print 'At ZERO current'
+        if state == 9:
+            print 'Heating persistent switch'
+        if state == 10:
+            print 'Cooling persistent switch'
+        ami.write('*ETE 111\n')
+        ami.write('*TRG\n')
+        trigger = ami.readline()
+        print trigger
 
-    ami.write('VOLT:LIM?\n')
-    print 'Voltage Limit: '
-    vlim = ami.readline()
-    print vlim
-    ami.write('CURR:TARG?\n')
-    print 'Target: '
-    targ = ami.readline()
-    print targ
-    ami.write('RAMP:RATE:CURR:1\n')
-    print 'Current Ramp Up Rate: '
-    currRampRate = ami.readline()
-    print currRampRate
-    ami.write('RAMPD:RATE:CURR:1\n')
-    currRampDown = ami.readline()
-    print 'Current Ramp Down Rate: '
-    print currRampDown
-    print 'Target Temperature: '+temp+'K'
+        ami.write('VOLT:LIM?\n')
+        print 'Voltage Limit: '
+        vlim = ami.readline()
+        print vlim
+        ami.write('CURR:TARG?\n')
+        print 'Target: '
+        targ = ami.readline()
+        print targ
+        ami.write('RAMP:RATE:CURR:1\n')
+        print 'Current Ramp Up Rate: '
+        currRampRate = ami.readline()
+        print currRampRate
+        ami.write('RAMPD:RATE:CURR:1\n')
+        currRampDown = ami.readline()
+        print 'Current Ramp Down Rate: '
+        print currRampDown
+        print 'Target Temperature: '+temp+'K'
+    except:
+        print 'Unable to query AMI, do not proceed'
 
 def writeToFile(volt,curr,L,dIdt,Z,y):
     global first
@@ -433,6 +465,5 @@ class App:
 
 
 App()
-#main()
 ami.close()
 csvfile.close()

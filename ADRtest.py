@@ -11,6 +11,8 @@ import numpy as np
 from Tkinter import *
 
 #written by Tim Childers to test functionality of ADR.py 18/07/2017
+#TO DO:
+#Test rampRate()
 
 Alarm = 0
 count = 0
@@ -273,7 +275,7 @@ def check():
         count=5 #5
         switchOff()
 
-    #ADR Temp and begin ramp down
+    #ADR switch Temp and begin ramp down
     if temps[12] < 3.8 and count==5:
         count=6
         rampD()
