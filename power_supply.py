@@ -27,7 +27,7 @@ if __name__=='__main__':
 		target = sys.argv[1]
 		rm = visa.ResourceManager()
 		if target == 'He4 pump':
-			ag47t = rm.open_resource('GPIB0::15::INSTR') #power supply 3647 on top row of rack
+			ag47t = rm.open_resource('GPIB1::15::INSTR') #power supply 3647 on top row of rack
 			ag47t.write("OUTput ON")
 			ag47t.write('INST:SEL OUT1')#Helium 4 pump
 			ag47t.write('Volt ' +str(voltage))
@@ -36,35 +36,35 @@ if __name__=='__main__':
 			#turn_off()
 			sys.exit()  
 		elif target == 'He3 pump':
-			ag47t = rm.open_resource('GPIB0::15::INSTR') #power supply 3647 on top row of rack
+			ag47t = rm.open_resource('GPIB1::15::INSTR') #power supply 3647 on top row of rack
 			ag47t.write("OUTput ON")
 			ag47t.write('INST:SEL OUT2')
 			ag47t.write('Volt ' +str(voltage))
 			print('You have tuned on the Helium 3 pump to ' + str(voltage) + ' V')
 			sys.exit()
 		elif target == 'He4 switch':
-			ag47b = rm.open_resource('GPIB0::5::INSTR') #power supply 3647 on bottom row of power supplies
+			ag47b = rm.open_resource('GPIB1::5::INSTR') #power supply 3647 on bottom row of power supplies
 			ag47b.write("OUTput ON")
 			ag47b.write('INST:SEL OUT1')
 			ag47b.write('Volt ' +str(voltage))
 			print('You have tuned on the Helium 4 switch to ' + str(voltage) + ' V')
 			sys.exit()
 		elif target == 'He3 switch':
-			ag47b = rm.open_resource('GPIB0::5::INSTR') #power supply 3647 on bottom row of power supplies
+			ag47b = rm.open_resource('GPIB1::5::INSTR') #power supply 3647 on bottom row of power supplies
 			ag47b.write("OUTput ON")
 			ag47b.write('INST:SEL OUT2')
 			ag47b.write('Volt ' +str(voltage))
 			print('You have tuned on the Helium 3 switch to ' + str(voltage) + ' V')
 			sys.exit()
 		elif target == 'ADR switch':
-			ag49 = rm.open_resource('GPIB0::3::INSTR') #power supply 3649 in the upper RH of Rack
+			ag49 = rm.open_resource('GPIB1::3::INSTR') #power supply 3649 in the upper RH of Rack
 			ag49.write("OUTput ON")
 			ag49.write('INST:SEL OUT1')
 			ag49.write('Volt ' +str(voltage))
 			print('You have tuned on the ADR switch to ' + str(voltage) + ' V')
 			sys.exit()
 		elif target == '4K 1K switch':
-			ag49 = rm.open_resource('GPIB0::3::INSTR') #power supply 3649 in the upper RH of Rack
+			ag49 = rm.open_resource('GPIB1::3::INSTR') #power supply 3649 in the upper RH of Rack
 			ag49.write("OUTput ON")
 			ag49.write('INST:SEL OUT2')
 			ag49.write('Volt ' +str(voltage))

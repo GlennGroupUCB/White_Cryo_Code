@@ -53,7 +53,7 @@ file_suffix3 = ''
 plt.figure(1,figsize = (21,11))
 ax = plt.gca() #need for changing legend labels
 x = np.arange(-420,0)*1. # initalize the x axis i.e. time going 420 mins into the past
-print(x[0],x[419])
+#print(x[0],x[419])
 y = np.ones((420,19))*-1 #initalize array to hold temperautere
 volt_y = np.zeros((420,6)) #initialize array to hold voltages
 curr_y = np.zeros((420,6)) #initialize array to hold currents
@@ -150,18 +150,20 @@ try: #allows you to kill the loop with ctrl c
 		
 		
 		#plot pressure
-		plt.subplot(gs[3,:])
-		plt.semilogy(x,press_y, color = 'b', linestyle = '-', linewidth = 2, label = 'Pressure ' + str(press_y[419,0]) + ' mbar')
-		if i!=0:
-			legend_press.get_texts()[0].set_text('Pressure ' + str(press_y[419,0]) + ' mbar')
-		if i==0:
-			legend_press= plt.legend(ncol = 1, loc = 2)
-		plt.xlim(x[0],x[419])
-		plt.ylim((1*10**-6),1)
-		
-		plt.draw() #update the plot
+		try:
+			plt.subplot(gs[3,:])
+			plt.semilogy(x,press_y, color = 'b', linestyle = '-', linewidth = 2, label = 'Pressure ' + str(press_y[419,0]) + ' mbar')
+			if i!=0:
+				legend_press.get_texts()[0].set_text('Pressure ' + str(press_y[419,0]) + ' mbar')
+			if i==0:
+				legend_press= plt.legend(ncol = 1, loc = 2)
+			plt.xlim(x[0],x[419])
+			plt.ylim((1*10**-6),1)
 			
-		
+			plt.draw() #update the plot
+		except:
+			print("Not plotting pressure")
+			
 
 		#Alarm function
 		if Alarm != 0: #if the alarm is turned on proceed

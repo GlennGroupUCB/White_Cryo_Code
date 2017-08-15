@@ -19,6 +19,17 @@ from scipy import interpolate
 
 
 #CHANGE LOG
+#8/7/17 - Added menu to prompt user for start time and adr switch
+def menu():
+	global adrOn
+	global sleep_time
+	userInput = raw_input('Enter time till start: ("hours","minutes")')
+	hours_minutes = userInput.split(',')
+	hrs = hours_minutes[0]
+	mnts = hours_minutes[1]
+	sleep_time = int(hrs)*3600 + int(mnts)*60
+	adrOn = raw_input('Cycle ADR? "Y" or "N": ')
+	#return sleep_time
 
 menu()
 time.sleep(sleep_time)
@@ -27,9 +38,9 @@ time.sleep(sleep_time)
 rm = visa.ResourceManager()
 rm.list_resources()
 
-ag49 = rm.open_resource('GPIB0::3::INSTR') #power supply 3649 in the upper RH of Rack
-ag47b = rm.open_resource('GPIB0::5::INSTR') #power supply 3647 on bottom row of power supplies
-ag47t = rm.open_resource('GPIB0::15::INSTR') #power supply 3647 on top row of rack
+ag49 = rm.open_resource('GPIB1::3::INSTR') #power supply 3649 in the upper RH of Rack
+ag47b = rm.open_resource('GPIB1::5::INSTR') #power supply 3647 on bottom row of power supplies
+ag47t = rm.open_resource('GPIB1::15::INSTR') #power supply 3647 on top row of rack
 
 #turn on the power supplys
 ag49.write('OUTPut ON')
@@ -260,7 +271,7 @@ try: #allows you to kill the loop with ctrl c
 			k = k+1
 		#if it is the first time ploting generate the legend
 		if i == 0:
-			legend = plt.legend(ncol = 2,loc = 1, bbox_to_anchor=(0.2, 1.15), fancybox=True, shadow=True)
+			legend = plt.legend(ncol = 2,loc = 1, bbox_to_anchor=(0.3, 1.15), fancybox=True, shadow=True)
 		plt.xlim(x[0],x[419])
 		plt.ylim(0.1,300)
 
@@ -343,17 +354,8 @@ try: #allows you to kill the loop with ctrl c
 
 
 except KeyboardInterrupt:
-    pass
+	pass
 
-def menu():
-	global adrOn
-	global sleep_time
-	userInput = raw_input('Enter time till start: ("hours","minutes")')
-	hours_minutes = userInput.split(',')
-	hrs = hours_minutes[0]
-	mnts = hours_minutes[1]
-	sleep_time = int(hrs)*3600 + mnts*60
-	adrOn = raw_input('Cycle ADR? "Y" or "N": ')
-	#return sleep_time
+
 
 print("Human interupted the fridge cycle")

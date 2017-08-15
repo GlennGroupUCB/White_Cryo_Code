@@ -59,7 +59,7 @@ file_suffix = ''
 plt.figure(1,figsize = (21,11))
 ax = plt.gca() #need for changing legend labels
 x = np.arange(-420,0)*1. # initalize the x axis i.e. time going 420 mins into the past
-print(x[0],x[419])
+#print(x[0],x[419])
 y = np.ones((420,17))*-1 #initalize array to hold temperautere
 volt_y = np.zeros((420,6)) #initialize array to hold voltages
 curr_y = np.zeros((420,6)) #initialize array to hold currents
