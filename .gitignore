@@ -1,6 +1,11 @@
 # Windows image file caches
 Thumbs.db
 ehthumbs.db
+Voltage_Current
+Temps
+Pressure
+ADR
+
 
 # Folder config file
 Desktop.ini

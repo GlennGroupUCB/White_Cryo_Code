@@ -2,7 +2,8 @@ from __future__ import print_function
 import numpy as np
 import visa
 import matplotlib
-matplotlib.use('qt4agg')#need for continuously updating plot
+#matplotlib.use('qt4agg')#need for continuously updating plot
+matplotlib.use('TkAgg') #seems to be more responsive and less glitchy than gt4agg
 import matplotlib.pyplot as plt
 import time
 import datetime
@@ -11,6 +12,8 @@ import smtplib
 from scipy import interpolate
 from functions import read_power_supplies, get_temps, get_press, initialize
 import matplotlib.gridspec as gridspec
+import sys
+import power_supply as ps
 
 #Program to monitor the temperatures of the cyrostat
 #written by Jordan at some date lost in time. 
@@ -21,8 +24,66 @@ import matplotlib.gridspec as gridspec
 #03/10/17 - Tim - Added integration with functions.py. Now can read temp., pressure, Volt, and Curr
 #03/13/17 - Tim - Plots pressure and creates text files. Added headers to Volt and Press
 #05/11/17 - Tim - Changed plots to reflect new temp sensors, fixed print to file for temps, set alarm to 0
+#02/??/18 - Jordan - cleaned up printing to screen
+#03/09/18 - Jordan - incorporated cooldown.py as a mode in this code
 
 #TO DO 
+#the power supplies need to call power_supply.py
+
+if __name__=='__main__':
+	if len(sys.argv) < 2:
+		print('Starting in Monitoring mode')
+		mode = 'monitor'
+	else:
+		mode = sys.argv[1]
+		if mode == "cooldown":
+			print("Starting in cooldown mode")
+		elif mode == "monitor":
+			print("Starting in monitor mode")
+		else:
+			print("please choose mode that exists i.e. monitor or cooldown")
+			sys.exit()
+		
+		
+Cold_enough = 0
+def cooldown(temps):
+	#print(temps[9],temps[4])
+	if temps[9] < 6.5 and temps[8] <6.5: #are the switches cold enough
+		global Cold_enough
+		Cold_enough = 1
+		print("The cyostat is cold enough to turn on the pumps.")
+
+	#Heat up the 4He pump
+	if Cold_enough == 1 and temps[15]<12.: # if the switches have coold and just in case if the 4K plate gets to hot
+		#print("test")
+		if temps[7]<45.:
+			ps.change_voltage('He4 pump',25)
+		if temps[7]>45.:
+			ps.change_voltage('He4 pump',25)
+		if temps[7]>50.:	
+			ps.change_voltage('He4 pump',0)
+	else:
+		ps.change_voltage('He4 pump',0)
+		
+	#Heat up the He3 
+	if Cold_enough == 1 and temps[15]<12.:
+		if temps[8]<45.:
+			ps.change_voltage('He3 pump',15)
+		if temps[8]>45.:
+			ps.change_voltage('He3 pump',5)
+		if temps[8]>50.:
+			ps.change_voltage('He3 pump',0)
+	else:
+		ps.change_voltage('He3 pump',0)
+		
+	# turn on the ADR switch when it gets to cold to conduct	
+	if temps[12]<26.:
+		ps.change_voltage('ADR switch',1.75)
+	if temps[12]>30.: #temp should drop slowly
+		ps.change_voltage('ADR switch',0)
+	if temps[12]>35.: #just in case
+		ps.change_voltage('ADR switch',0)
+	
 
 RX202_lookup = np.loadtxt('RX-202A Mean Curve.tbl')#202 ADR sensor look up table
 #RX202_lookup = np.loadtxt('RX-102A Mean Curve.tbl') #102 300mK/ 1K sensors
@@ -33,11 +94,47 @@ RX202_interp = interpolate.interp1d(RX202_lookup[:,1], RX202_lookup[:,0],fill_va
 lines, colors, labels, plots = initialize()
 
 # turn on alarm on for certain values
-#                     4K P.T--4K HTS--50K HTS--Black Body--50K P.T.--50K Plate--ADR Shield--4He Pump--3He Pump--4He Switch--3 He Switch--300 mK Shield--ADK Switch--4-1K Switch--1K Shield--3He Head--4He Head--ADR--
-Alarm_on = np.array((  0,     0,       0,         0,           0,             0,       0,        0,           0,          0,         0,             0,        0,      0,       0,    0,      0, 	0))
-Alarm_value =np.array((0,     0,       0,         0,           0,             0,       0,        0,           0,          0,         0,             0,        0,      0,       0,    0,      0, 	0))
-
+Alarm_on = np.array((0,#4K P.T.               
+	0,#	4K HTS             
+	0,#	50K HTS           
+	0,#	Black Body      
+	0,#	50K P.T.          
+	0,#	50K Plate        
+	0,#	ADR Shield   
+	0,#	4He Pump       
+	0,#	3He Pump       
+	0,#	4He Switch     
+	0,#	3He Switch     
+	0,#	300 mK Shield  
+	0,#	ADR Switch     
+	0,#	4-1K Switch 
+	0,#	1K Shield          
+	0,#	4K Plate           
+	0,#	3He Head         
+	0,#	4He Head        
+	0))#ADR
+Alarm_value =np.array((0,#4K P.T.               
+	0,#	4K HTS             
+	0,#	50K HTS           
+	0,#	Black Body      
+	0,#	50K P.T.          
+	0,#	50K Plate        
+	0,#	ADR Shield   
+	0,#	4He Pump       
+	0,#	3He Pump       
+	0,#	4He Switch     
+	0,#	3He Switch     
+	0,#	300 mK Shield  
+	0,#	ADR Switch     
+	0,#	4-1K Switch 
+	0,#	1K Shield          
+	6.5,#	4K Plate           
+	0,#	3He Head         
+	0,#	4He Head        
+	0))#ADR
+	
 sleep_interval = 10. #seconds change back
+head_count = 0
 Alarm = 0 # 0 for off 1 for on
 
 now = datetime.datetime.now()
@@ -50,9 +147,9 @@ file_suffix2 = ''
 file_prefix3 =  "C:/Users/tycho/Desktop/White_Cryo_Code/Pressure/" + date_str
 file_suffix3 = ''
 
-plt.figure(1,figsize = (21,11))
+fig = plt.figure(1,figsize = (21,11))
 ax = plt.gca() #need for changing legend labels
-x = np.arange(-420,0)*1. # initalize the x axis i.e. time going 420 mins into the past
+x = np.arange(-420,0)*sleep_interval/60. # initalize the x axis i.e. time going 420 mins into the past
 #print(x[0],x[419])
 y = np.ones((420,19))*-1 #initalize array to hold temperautere
 volt_y = np.zeros((420,6)) #initialize array to hold voltages
@@ -111,23 +208,22 @@ try: #allows you to kill the loop with ctrl c
 		
 		#grab temperatures and store them to the temperature array	
 		temps = get_temps()
-		y[419,:] = temps
+		y[419,:] = temps #put them in the array for the most recent time
 		
-		
-		k = 0 #intiialize a counter
+		k = 0 #initialize a counter
 		
 		plt.subplot(gs[0:2,:]) #create top subplot 
+		plt.title(mode+ " mode")
 		for j in plots: #plot all of the temperatures with appropriate labels
-			#print(y[419,j])
-			plt.semilogy(x,y[:,j],color = colors[np.mod(j,7)],linestyle = lines[j/7],linewidth = 2, label = labels[k]+" " +str(y[419,j])[0:5]+"K")
+			plt.semilogy(x,y[:,j],color = colors[np.mod(j,7)],linestyle = lines[j/7],linewidth = 2, label = labels[j]+" " +str(y[419,j])[0:5]+"K")
 			if i != 0:
-				legend.get_texts()[k].set_text(labels[k]+" " +str(y[419,j])[0:5]+"K") #if it is not the first time ploting rewrite the legend with the new temps
+				legend.get_texts()[k].set_text(labels[j]+" " +str(y[419,j])[0:5]+"K") #if it is not the first time ploting rewrite the legend with the new temps
 			k = k+1
 			
-		if i == 0:	#if it is the first time ploting generate the legend				
+		if i == 0:	#if it is the first time plotting generate the legend				
 			legend = plt.legend(ncol = 2,loc =2)
 		plt.xlim(x[0],x[419])
-		plt.ylim(0.1,300)
+		plt.ylim(0.05,300)
 		
 		#grab voltages and current from power supplies
 		power_labels, volt, curr = read_power_supplies()
@@ -154,11 +250,11 @@ try: #allows you to kill the loop with ctrl c
 			plt.subplot(gs[3,:])
 			plt.semilogy(x,press_y, color = 'b', linestyle = '-', linewidth = 2, label = 'Pressure ' + str(press_y[419,0]) + ' mbar')
 			if i!=0:
-				legend_press.get_texts()[0].set_text('Pressure ' + str(press_y[419,0]) + ' mbar')
+				legend_press.get_texts()[0].set_text('Pressure ' + str(press_y[419,0]*1000) + 'E-3 mbar')
 			if i==0:
 				legend_press= plt.legend(ncol = 1, loc = 2)
 			plt.xlim(x[0],x[419])
-			plt.ylim((1*10**-6),1)
+			plt.ylim((1*10**-4),1.3*10**3)
 			
 			plt.draw() #update the plot
 		except:
@@ -198,9 +294,21 @@ try: #allows you to kill the loop with ctrl c
 		
 		# write temps to file
 		print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(y[419,0])+' '+ str(y[419,1])+' '+ str(y[419,2])+' '+ str(y[419,3])+' '+ str(y[419,4])+' '+ str(y[419,5])+' '+ str(y[419,6])+' '+ str(y[419,7])+' '+ str(y[419,8])+' '+ str(y[419,9])+' '+ str(y[419,10])+' '+ str(y[419,11])+' '+ str(y[419,12])+' '+ str(y[419,13])+' '+ str(y[419,14])+' '+ str(y[419,15])+' '+ str(y[419,16])+' '+ str(y[419,17])+' '+str(y[419,18]), file = f) #print the temperature and some nonsense numbers to the file
-		for k in range(0,len(temps)): 
+		if head_count == 0:
+			head_count = 10
+			print("")
+			print(str(now)[0:19]+" ",end='')
+			for k in plots:
+				print(labels[k][0:6]+" ",end = "")
+			print("")
+		head_count = head_count-1
+		print(str(now)[0:19]+" ",end='')
+		for k in plots: 
 			# write to command prompt
-			print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(y[419, k]))
+			#print(" %2.2f" %y[419,k],end = '')
+			print(str(y[419,k]+.00001)[0:6]+" ",end = '')
+			#print(str(np.round(t,3)).strip()+' '+ str(y[419, k]),end = '')
+		print('')#print new line
 			
 			
 		
@@ -209,7 +317,7 @@ try: #allows you to kill the loop with ctrl c
 		 
 		print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(press_y[419,0])+' ', file = p) #print the temperature and some nonsense numbers to the file
 		# write to command prompt
-		print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(press_y[419, 0]))	
+		#print( str(np.round(t,3)).strip()+' '+ str(press_y[419, 0]))	
 		
 		#print the current and voltage to the file
 		volt_str = ''
@@ -220,17 +328,25 @@ try: #allows you to kill the loop with ctrl c
 			#print(str(volt_y[419, k])+'V '+str(curr_y[419, k])+'I ', file = g) 
 			
 			# write to command prompt
-			print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(volt_y[419, k])+' '+ str(curr_y[419, k]))
+			#print(str(np.round(t,3)).strip()+' '+ str(volt_y[419, k])+' '+ str(curr_y[419, k]),end = '')
+		#print("")#print newline
 		print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ volt_str,file = g)
 		#time.sleep(sleep_interval)#sleep for 60 second
+		gs.tight_layout(fig)
 		plt.pause(sleep_interval) # pause for sleep interval before looping again
 		
-		i = i + 1 #icrement the counter
+		i = i + 1 #increment the counter
+		
+		if mode == 'cooldown':
+			cooldown(temps)
+			
 				
 		
 except KeyboardInterrupt: #if you press ctrl c quit
-    pass
+	pass
 
 f.close() #close the file
 
 print("Monitoring disabled")
+
+

@@ -5,7 +5,7 @@ import serial.tools.list_ports
 import matplotlib
 import time
 from scipy import interpolate
-matplotlib.use('qt4agg')#need for continuously updating plot
+#matplotlib.use('qt4agg')#need for continuously updating plot
 
 
 #Contains function which read pressure, temperture, voltage and current from intruments as well as plotting and writing to file.
@@ -14,9 +14,12 @@ matplotlib.use('qt4agg')#need for continuously updating plot
 
 #ChangeLog:
 # 03/10/17 - Added get_press() to read and return pressure from 972B DualMag Transducer - Tim
-# 03/15/17 - Changed timeout of get_press() to 0.1 sec to minimize delay. Can't go under 0.1 sec without throwing error - Tim
 # 04/10/17 - added plot_and_write() function for use with fast monitor - Tim
 # 07/18/17 - removed plot_and_write() function temporarily
+# 11/01/17 - Turned off Pressure Gauge because wasn't connecting and throwing error
+# 1/23/17 -Jordan- fixed ADR readout problem by adding a delay
+# 1/25/17 - changed reading out the ADR to average 16 seperate readings taking 3 seconds to read it out
+# this now sets the refresh rate for ADR py to be 3 seconds
 
 #create a resourcemanager and see what instruments the computer can talk to
 #path = os.path.normpath("C:/Program Files/IVI Foundation/VISA/Win64/Lib_x64/msc/visa64.lib")
@@ -36,15 +39,19 @@ ag47t = rm.open_resource('GPIB1::15::INSTR')
 ag47b = rm.open_resource('GPIB1::5::INSTR')
 ag49 = rm.open_resource('GPIB1::3::INSTR')
 
+#Sometimes Pressure Gauge doesn't fucntion, to turn on, set gauge=1
+gauge=0
+
 # Connect to Pressure Gauge (900USB-1 @ COM7)
-ser = serial.Serial( 		#initialize
-port = 'COM7',
-baudrate = 115200,
-parity=serial.PARITY_NONE,
-stopbits=serial.STOPBITS_ONE,
-bytesize=serial.EIGHTBITS,
-timeout= 2
-)
+if gauge==1:
+	ser = serial.Serial( 		#initialize
+	port = 'COM7',
+	baudrate = 115200,
+	parity=serial.PARITY_NONE,
+	stopbits=serial.STOPBITS_ONE,
+	bytesize=serial.EIGHTBITS,
+	timeout= 2
+	)
 #print("connected to: ")
 #print(ser.portstr)
 #ser.write('@254AD?;FF')		#finds device address '253'
@@ -61,50 +68,70 @@ def initialize():
 	colors = ['b','g','r','c','m','y','k']
 
 	#labels for the thermometers extra space is so the numbers all line up. might be a better way to add the space
-	labels = ['4K P.T.               ','4K HTS             ','50K HTS           ','Black Body       ','50K P.T.            ','50K Plate         ','ADR Shield      ','4He Pump        ','3He Pump        ','4He Switch        ','3He Switch        ','300 mK Shield   ','ADR Switch        ','4-1K Switch       ','1K Shield           ','4K Plate           ','3He Head          ','4He Head          ','ADR                   ']
+	labels = ['4K P.T.               ',
+	'4K HTS             ',
+	'50K HTS           ',
+	'Black Body       ',
+	'50K P.T.            ',
+	'50K Plate         ',
+	'ADR Shield      ',
+	'4He Pump        ',
+	'3He Pump        ',
+	'4He Switch       ',
+	'3He Switch       ',
+	'300 mK Shield   ',
+	'ADR Switch        ',
+	'4-1K Switch       ',
+	'1K Shield           ',
+	'4K Plate            ',
+	'3He Head          ',
+	'4He Head          ',
+	'ADR                   ']
 
 
 	#allows you to not plot ugly thermometers
-	plots = (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18)
+	plots = (0,1,2,4,5,7,8,9,10,11,12,13,14,15,16,17,18)
 
 	return lines, colors, labels, plots
 
-#get vacuum pressure
+#get vacuum pressur2
 def get_press():
 	mBar = -1
-	if ser.is_open:
-		#pressdata = ser.read(10)	#read 10 lines of data
-		#line = ser.readline()
-		#print(pressdata)
-		#print(line)
+	global gauge
+	if gauge == 1:
+		if ser.is_open:
+			#pressdata = ser.read(10)	#read 10 lines of data
+			#line = ser.readline()
+			#print(pressdata)
+			#print(line)
 
-		#ser.write('@253PR1?;FF') #non combined reading
-		#line = ser.readline()
-		#print(line)
-		try:
-			ser.write('@253PR4?;FF') #combined reading, 4 digits
-			line = ser.readline()
-			print line
-			i = 0
-			s = 0
-			e = 1
-			for i in range(0, len(line)):	#sparses line to extract pressure
-				if line[i] == 'K':			#find begin of press
-					s = i+1
-				if line[i] == 'E':			#finds end of press and begin of magnitude
-					e = i
-					pow=int(line[i+2])*-1
-					#print pow
-			mBar = float(line[s:e])*1.33322*10**pow	#final combined pressure in mbar
-			print('Pressure: ' + str(mBar) + ' mbar')
-		except:
-			print "Unable to read Press. Gauge"
-			time.sleep(1)
+			#ser.write('@253PR1?;FF') #non combined reading
+			#line = ser.readline()
+			#print(line)
+			try:
+				ser.write('@253PR4?;FF') #combined reading, 4 digits
+				line = ser.readline()
+				#print line
+				i = 0
+				s = 0
+				e = 1
+				for i in range(0, len(line)):	#sparses line to extract pressure
+					if line[i] == 'K':			#find begin of press
+						s = i+1
+					if line[i] == 'E':			#finds end of press and begin of magnitude
+						e = i
+						pow=int(line[i+2])*-1
+						#print pow
+				mBar = float(line[s:e])*1.33322*10**pow	#final combined pressure in mbar
+				#print('Pressure: ' + str(mBar) + ' mbar')
+			except:
+				print "Unable to read Press. Gauge"
+				time.sleep(1)
 
-	else:
-		print "COM7 is not open"
+		else:
+			print "COM7 is not open"
 
-	ser.close()
+	#ser.close() #jordan commented out 1/23/18
 	return mBar
 
 def get_temps():
@@ -147,9 +174,12 @@ def get_temps():
 		#He-4 Head
 		y[ 17] = lk224_B = float(lk224.query('KRDG? B'))
 		
-		lr750_a = lr750.query('GET 0')
-		time.sleep(1)
-		print lr750_a
+		lr750_a_num = 0
+		for w in range(0,5): #sample 5 times to reduce noise takes 1 seconds
+			lr750_a = lr750.query('GET 0',delay=.188) #requires delay, new information every .188 seconds
+			lr750_a_num = lr750_a_num + np.float(lr750_a[0:8])
+		lr750_a_num = lr750_a_num/5.
+		#print lr750_a
 		#every once in a while this fails
 		lr750_a_num = np.float(lr750_a[0:8])
 		#print(lr750_a_num)

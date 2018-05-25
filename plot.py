@@ -48,7 +48,7 @@ def main():
 	else:
 		#single plot format
 		figure, ax = plt.subplots()
-
+}
 	#filelist = "./Temps/2017-05-24_temps.txt,./Temps/2017-05-25_temps.txt"
 	#filelist = "./Temps/2017-07-06_temps.txt"
 	#filelist2= "./Voltage_Current/2017-05-24_VI.txt,./Voltage_Current/2017-05-25_VI.txt"
