@@ -1,0 +1,2 @@
+#Human readable time. Time (s) since start. V @ ag47t. A @ ag47t. V @ ag47b. A @ ag47b. V @ ag49. A @ ag49.
+2017-08-08 12:18:48.991000 0.04 14.99913,15.03195,0.0,0.0,1.744801,0.0

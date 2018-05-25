@@ -227,6 +227,7 @@ try: #allows you to kill the loop with ctrl c
 			ag47t.write('Volt 0')
 		
 		# turn on the ADR switch when it gets to cold to conduct
+		'''
 		if lk224_TD2<26.:
 			ag49.write('INST:SEL OUT1')
 			ag49.write('Volt 3.5')#3.5
@@ -236,6 +237,7 @@ try: #allows you to kill the loop with ctrl c
 		if lk224_TD2>35.: #just in case
 			ag49.write('INST:SEL OUT1')
 			ag49.write('Volt 0')
+		'''
 			
 			
 		
