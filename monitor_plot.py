@@ -159,11 +159,11 @@ class MonitorPlot:
 
 		# Put the new data in the history arrays
 		self._time_data[-1] = time / 60
-		self.T_data[-1, :] = Ts
-		self.V_data[-1, :] = Vs
-		self.A_data[-1, :] = As
+		self.T_data[-1,:] = Ts
+		self.V_data[-1,:] = Vs
+		self.A_data[-1,:] = As
 		if self._plot_pressure:
-			self.P_data[-1, :] = Ps
+			self.P_data[-1,:] = Ps
 
 		# Update the temperature lines
 		for i, t_line in enumerate(self._T_lines):
@@ -184,7 +184,12 @@ class MonitorPlot:
 		# Redraw the plot if requested
 		if redraw:
 			self._T_plot.set_xlim(self._time_data[0], self._time_data[-1] + self._sleep_minutes * 2)
-			plt.draw()
+			time_str = 'Current Time  -  {:0<2d}:{:0<2d}:{:0>6.3f}'.format(int(time // 3600), int(time // 60), time % 60)
+			if self._plot_pressure:
+				self._P_plot.set_xlabel('Time Since Start (mins)\n\n{}'.format(time_str))
+			else:
+				self._V_plot.set_xlabel('Time Since Start (mins)\n\n{}'.format(time_str))
+			self._fig.canvas.draw_idle()
 
 
 	def wait(self, sleep_interval=None):
