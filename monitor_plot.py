@@ -8,7 +8,8 @@ from matplotlib import gridspec
 # can be copied and modified to easily support new sets of plots and other data.
 
 # Revision History:
-#   5/29/18 - Sean Moss - Initial version
+#   5/29/18 - Sean - Initial version
+#   5/31/18 - Sean - Made plotting the pressure optional so it can be used in fridge_cycle.py without any outside changes
 
 class MonitorPlot:
 	"""
@@ -176,8 +177,9 @@ class MonitorPlot:
 
 		# Update the pressure data
 		if self._plot_pressure:
-			self._P_lines[0][0].set_data(self._time_data, self.P_data)
-			self._P_leg.texts[0].set_text(('Pressure {:>7.3f} mbar').format(self.P_data[-1,0]))
+			for i, p_line in enumerate(self._P_lines):
+				p_line[0].set_data(self._time_data, self.P_data[:, i])
+				self._P_leg.texts[i].set_text(('Pressure {:>7.3f} mbar').format(self.P_data[:, i][-1]))
 
 		# Redraw the plot if requested
 		if redraw:
