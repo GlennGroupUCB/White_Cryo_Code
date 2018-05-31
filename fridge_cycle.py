@@ -108,9 +108,9 @@ Alarm = 0 # 0 for off 1 for on
 now = datetime.datetime.now()
 date_str = str(now)[0:10]
 # we want the file prefix to reflect the date in which the temperature data is taken
-file_prefix =  "C:/Users/tycho/Desktop/White_Cryo_Code/Temps/" + date_str
+file_prefix =  "./Temps/" + date_str
 file_suffix = ''
-file_prefix2 =  "C:/Users/tycho/Desktop/White_Cryo_Code/Voltage_Current/" + date_str
+file_prefix2 =  "./Voltage_Current/" + date_str
 file_suffix2 = ''
 
 plt.figure(1,figsize = (21,11))
@@ -158,9 +158,9 @@ try: #allows you to kill the loop with ctrl c
 		if str(now)[0:10] != date_str: #checks if the day has changed (i.e.) at midnight,if it is a new day start a new file
 			f.close() #close the old file
 			date_str = str(now)[0:10]
-			file_prefix =  "C:/Users/tycho/Desktop/White_Cryo_Code/Temps/" + date_str
+			file_prefix =  "./Temps/" + date_str
 			file_suffix = ''
-			file_prefix2 =  "C:/Users/tycho/Desktop/White_Cryo_Code/Voltage_Current/" + date_str
+			file_prefix2 =  "./Voltage_Current/" + date_str
 
 
 			f = open(file_prefix + file_suffix +'_temps.txt' ,'w') #open a new file to write the temperatures to

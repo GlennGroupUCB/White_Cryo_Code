@@ -19,7 +19,7 @@ class MonitorPlot:
 	:ivar ndarray T_data: The temperature data array, size: (hist_size, 19)
 	:ivar ndarray V_data: The voltage data array, size: (hist_size, 6)
 	:ivar ndarray A_data: The current data array, size: (hist_size, 6)
-	:ivar ndarray P_data: The pressure data array, size: (hist_size, 1)
+	:ivar ndarray P_data: The pressure data array, size: (hist_size, 1), will be None if pressure is not plotted
 	"""
 
 	_LINES = [ '-', '--', '-.' ]
@@ -57,43 +57,53 @@ class MonitorPlot:
 	def history_size(self):
 		return self._hist_size
 
+	@property
+	def plot_pressure(self):
+		return self._plot_pressure
 
-	def __init__(self, sleep_interval, hist_size):
+
+	def __init__(self, sleep_interval, hist_size, plot_pressure=True):
 		"""
 		Creates and opens the new plot with default data, ready for updating in the future.
 		
 		:param float sleep_interval: The number of seconds to wait between plot updates.
 		:param int hist_size: The number of wait intervals to plot and keep in memory as history.
+		:param bool plot_pressure: If the pressure data should be plotted.
 		"""
 		# Save the parameters
-		self._sleep = float(sleep_interval)
+		self._sleep = sleep_interval = float(sleep_interval)
 		self._sleep_minutes = sleep_interval / 60
-		self._hist_size = int(hist_size)
+		self._hist_size = hist_size = int(hist_size)
+		self._plot_pressure = plot_pressure = bool(plot_pressure)
 
 		# Set up the data history arrays
 		self._time_data = np.arange(-hist_size, 0) * self._sleep_minutes
 		self.T_data = np.ones((hist_size, 19)) * -1
 		self.V_data = np.zeros((hist_size, 6))
 		self.A_data = np.zeros((hist_size, 6))
-		self.P_data = np.zeros((hist_size, 1))
+		self.P_data = np.zeros((hist_size, 1)) if plot_pressure else None
 
 		# Prepare the figure
 		self._fig = plt.figure(figsize=(21, 11))
-		pgrid = gridspec.GridSpec(4, 1)
+		pgrid = gridspec.GridSpec(4 if plot_pressure else 3, 1)
 		self._T_plot = self._fig.add_subplot(pgrid[0:2, 0])
 		self._V_plot = self._fig.add_subplot(pgrid[(2, 0)], sharex=self._T_plot)
-		self._P_plot = self._fig.add_subplot(pgrid[(3, 0)], sharex=self._T_plot)
+		self._P_plot = self._fig.add_subplot(pgrid[(3, 0)], sharex=self._T_plot) if plot_pressure else None
 		self._fig.subplots_adjust(hspace=0)
 
 		# Style the plots
 		self._fig.suptitle('Thermometry', fontsize='xx-large')
 		self._T_plot.set_ylabel('Temperature (K)')
-		self._V_plot.set_ylabel('Voltage (V)')
-		self._P_plot.set_ylabel('Pressure (mBar)')
-		self._P_plot.set_xlabel('Time (mins)')
 		self._T_plot.set_ylim((0.05, 300))
+		self._V_plot.set_ylabel('Voltage (V)')
 		self._V_plot.set_ylim((0, 30))
-		self._P_plot.set_ylim((0.0001, 1300.0))
+		if plot_pressure:
+			self._P_plot.set_ylabel('Pressure (mBar)')
+			self._P_plot.set_xlabel('Time (mins)')
+			self._P_plot.set_ylim((0.0001, 1300.0))
+			self._P_plot.set_xlabel('Time Since Start (mins)')
+		else:
+			self._V_plot.set_xlabel('Time Since Start (mins)')
 
 		# Create and cache the data lines
 		self._T_lines = [
@@ -107,15 +117,16 @@ class MonitorPlot:
 		self._P_lines = [
 			self._P_plot.semilogy(self._time_data, self.P_data[:, i], label=('Pressure {:>7.3f} mbar').format(self.P_data[:,i][-1]))
 			for i in range(1)
-		]
+		] if plot_pressure else None
 
 		# Create and cache the legends
 		self._T_leg = self._T_plot.legend(loc='upper left')
 		self._V_leg = self._V_plot.legend(loc='upper left')
-		self._P_leg = self._P_plot.legend(loc='upper left')
+		self._P_leg = self._P_plot.legend(loc='upper left') if plot_pressure else None
 		plt.setp(self._T_leg.texts, family='consolas')
 		plt.setp(self._V_leg.texts, family='consolas')
-		plt.setp(self._P_leg.texts, family='consolas')
+		if plot_pressure:
+			plt.setp(self._P_leg.texts, family='consolas')
 
 
 	def show(self):
@@ -142,14 +153,16 @@ class MonitorPlot:
 		self.T_data = np.roll(self.T_data, -1, axis=0)
 		self.V_data = np.roll(self.V_data, -1, axis=0)
 		self.A_data = np.roll(self.A_data, -1, axis=0)
-		self.P_data = np.roll(self.P_data, -1, axis=0)
+		if self._plot_pressure:
+			self.P_data = np.roll(self.P_data, -1, axis=0)
 
 		# Put the new data in the history arrays
 		self._time_data[-1] = time / 60
 		self.T_data[-1, :] = Ts
 		self.V_data[-1, :] = Vs
 		self.A_data[-1, :] = As
-		self.P_data[-1, :] = Ps
+		if self._plot_pressure:
+			self.P_data[-1, :] = Ps
 
 		# Update the temperature lines
 		for i, t_line in enumerate(self._T_lines):
@@ -162,12 +175,13 @@ class MonitorPlot:
 			self._V_leg.texts[i].set_text(('{:<15}{:>7.3f} V {:>7.3f} A').format(MonitorPlot._V_LABELS[i], self.V_data[:, i][-1], self.A_data[:, i][-1]))
 
 		# Update the pressure data
-		self._P_lines[0][0].set_data(self._time_data, self.P_data)
-		self._P_leg.texts[0].set_text(('Pressure {:>7.3f} mbar').format(self.P_data[-1,0]))
+		if self._plot_pressure:
+			self._P_lines[0][0].set_data(self._time_data, self.P_data)
+			self._P_leg.texts[0].set_text(('Pressure {:>7.3f} mbar').format(self.P_data[-1,0]))
 
 		# Redraw the plot if requested
 		if redraw:
-			self._V_plot.set_xlim(self._time_data[0], self._time_data[-1] + self._sleep_minutes * 2)
+			self._T_plot.set_xlim(self._time_data[0], self._time_data[-1] + self._sleep_minutes * 2)
 			plt.draw()
 
 

@@ -174,10 +174,10 @@ try: #allows you to kill the loop with ctrl c
 		if str(now)[0:10] != date_str: #checks if the day has changed (i.e.) at midnight,if it is a new day start a new file
 			f.close() #close the old file
 			date_str = str(now)[0:10]
-			file_prefix =  "C:/Users/tycho/Desktop/White_Cryo_Code/Temps/" + date_str
+			file_prefix =  "./Temps/" + date_str
 			file_suffix = ''
-			file_prefix2 =  "C:/Users/tycho/Desktop/White_Cryo_Code/Voltage_Current/" + date_str
-			file_prefix3 = "C:/Users/tycho/Desktop/White_Cryo_Code/Pressure/" + date_str
+			file_prefix2 =  "./Voltage_Current/" + date_str
+			file_prefix3 = "./Pressure/" + date_str
 			
 			f = open(file_prefix + file_suffix +'_temps.txt' ,'w') #open a new file to write the temperatures to
 			g = open(file_prefix2 + file_suffix +'_VI.txt' ,'w') 
