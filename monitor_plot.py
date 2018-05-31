@@ -8,7 +8,7 @@ from matplotlib import gridspec
 # can be copied and modified to easily support new sets of plots and other data.
 
 # Revision History:
-#   * 5/29/18 Sean Moss  -  Initial version
+#   5/29/18 - Sean Moss - Initial version
 
 class MonitorPlot:
 	"""
@@ -41,6 +41,14 @@ class MonitorPlot:
 	def _get_line_color(i):
 		return MonitorPlot._COLORS[int(i % 7)]
 
+	@staticmethod
+	def get_temp_labels():
+		return MonitorPlot._T_LABELS
+
+	@staticmethod
+	def get_volt_labels():
+		return MonitorPlot._V_LABELS
+
 	@property
 	def sleep_interval(self):
 		return self._sleep
@@ -67,7 +75,7 @@ class MonitorPlot:
 		self.T_data = np.ones((hist_size, 19)) * -1
 		self.V_data = np.zeros((hist_size, 6))
 		self.A_data = np.zeros((hist_size, 6))
-		self.P_data = np.zeros(hist_size)
+		self.P_data = np.zeros((hist_size, 1))
 
 		# Prepare the figure
 		self._fig = plt.figure(figsize=(21, 11))
@@ -91,7 +99,7 @@ class MonitorPlot:
 		self._T_lines = [self._T_plot.semilogy(self._time_data, self.T_data[:, i], color=MonitorPlot._get_line_color(i), linestyle=MonitorPlot._get_line_style(i), label=('{:<15}{:>7.3f} K').format(MonitorPlot._T_LABELS[i], self.T_data[:, i][-1])) for i in range(19)]
 		self._V_lines = [self._V_plot.plot(self._time_data, self.V_data[:, i], color=MonitorPlot._get_line_color(i), label=('{:<15}{:>7.3f} V {:>7.3f} A').format(MonitorPlot._V_LABELS[i], self.V_data[:, i][-1], self.A_data[:, i][-1])) for i in range(6)]
 		self._P_lines = [
-			self._P_plot.semilogy(self._time_data, self.P_data, label=('Pressure {:>7.3f} mbar').format(self.P_data[-1]))
+			self._P_plot.semilogy(self._time_data, self.P_data, label=('Pressure {:>7.3f} mbar').format(self.P_data[-1,0]))
 		]
 
 		# Create and cache the legends
@@ -134,7 +142,7 @@ class MonitorPlot:
 		self.T_data[-1, :] = Ts
 		self.V_data[-1, :] = Vs
 		self.A_data[-1, :] = As
-		self.P_data[-1] = Ps
+		self.P_data[-1, :] = Ps
 
 		# Update the temperature lines
 		for i, t_line in enumerate(self._T_lines):
@@ -148,7 +156,7 @@ class MonitorPlot:
 
 		# Update the pressure data
 		self._P_lines[0][0].set_data(self._time_data, self.P_data)
-		self._P_leg.texts[0].set_text(('Pressure {:>7.3f} mbar').format(self.P_data[-1]))
+		self._P_leg.texts[0].set_text(('Pressure {:>7.3f} mbar').format(self.P_data[-1,0]))
 
 		# Redraw the plot if requested
 		if redraw:

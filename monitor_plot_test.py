@@ -47,19 +47,22 @@ def read_power_supplies():
 
 
 
+def _main():
+	mplot = MonitorPlot(5, 420)
+	mplot.show()
 
-mplot = MonitorPlot(5, 420)
-mplot.show()
+	start = time.time()
+	while True:
+		# Get the new data
+		new_temps = get_temps()
+		new_press = get_press()
+		_, new_volts, new_amps = read_power_supplies()
 
-start = time.time()
-while True:
-	# Get the new data
-	new_temps = get_temps()
-	new_press = get_press()
-	_, new_volts, new_amps = read_power_supplies()
+		# Update the plot
+		mplot.update(time.time() - start, new_temps, new_volts, new_amps, new_press)
 
-	# Update the plot
-	mplot.update(time.time() - start, new_temps, new_volts, new_amps, new_press)
+		# Wait
+		mplot.wait()
 
-	# Wait
-	mplot.wait()
+if __name__ == '__main__':
+	_main()

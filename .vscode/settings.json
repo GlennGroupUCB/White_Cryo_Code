@@ -1,9 +1,0 @@
-{
-    "python.linting.pylintEnabled": false,
-
-    "editor.tabSize": 4,
-
-    "editor.renderWhitespace": "boundary",
-
-    "editor.insertSpaces": false
-}
