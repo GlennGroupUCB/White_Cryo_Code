@@ -116,10 +116,6 @@ file_suffix = ''
 file_prefix2 =  "./Voltage_Current/" + date_str
 file_suffix2 = ''
 
-plt.figure(1,figsize = (21,11))
-ax = plt.gca() #need for changing legend labels
-
-
 #do a check to make sure the  he3 and he4 switches have cooled
 temps = get_temps()
 if temps[9] >15. or temps[10]>15:
