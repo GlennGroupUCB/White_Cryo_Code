@@ -10,12 +10,11 @@ import datetime
 import os
 import smtplib
 from scipy import interpolate
-#from functions import read_power_supplies, get_temps, get_press, initialize
+from functions import read_power_supplies, get_temps, get_press, initialize
 import matplotlib.gridspec as gridspec
 import sys
 import power_supply as ps
 from monitor_plot import MonitorPlot
-from monitor_plot_test import read_power_supplies, get_temps, get_press, initialize
 
 #Program to monitor the temperatures of the cyrostat
 #written by Jordan at some date lost in time. 
@@ -28,6 +27,7 @@ from monitor_plot_test import read_power_supplies, get_temps, get_press, initial
 #05/11/17 - Tim - Changed plots to reflect new temp sensors, fixed print to file for temps, set alarm to 0
 #02/??/18 - Jordan - cleaned up printing to screen
 #03/09/18 - Jordan - incorporated cooldown.py as a mode in this code
+#05/31/18 - Sean - changed the plotting code to use the new MonitorPlot class in monitor_plot.py
 
 #TO DO 
 #the power supplies need to call power_supply.py
@@ -207,12 +207,12 @@ try: #allows you to kill the loop with ctrl c
 		curr = new_curr
 
 		#Alarm function
-		Alarm = 0 # TEMPORARY - REMOVE BEFORE USE
+		DisableTextAlarm = False # This can be flipped to disable the text message alerts if testing directly on tycho
 		if Alarm != 0: #if the alarm is turned on proceed
 			Alarm_test = y[-1,:]*Alarm_on #0 if not on otherwise actual temperature
 			if (Alarm_test>(Alarm_value +.001)).any() == True: #have any of the alarm values been reached
 				print("Alarm Alarm")
-				if Alarm == 1: # we only want it to send us texts once not over and over again
+				if Alarm == 1 and not DisableTextAlarm: # we only want it to send us texts once not over and over again
 					print("first occurance")
 					fromaddr = 'SubmmLab@gmail.com'
 					toaddrs  = '3145741711@txt.att.net'

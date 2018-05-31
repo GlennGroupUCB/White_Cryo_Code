@@ -96,10 +96,17 @@ class MonitorPlot:
 		self._P_plot.set_ylim((0.0001, 1300.0))
 
 		# Create and cache the data lines
-		self._T_lines = [self._T_plot.semilogy(self._time_data, self.T_data[:, i], color=MonitorPlot._get_line_color(i), linestyle=MonitorPlot._get_line_style(i), label=('{:<15}{:>7.3f} K').format(MonitorPlot._T_LABELS[i], self.T_data[:, i][-1])) for i in range(19)]
-		self._V_lines = [self._V_plot.plot(self._time_data, self.V_data[:, i], color=MonitorPlot._get_line_color(i), label=('{:<15}{:>7.3f} V {:>7.3f} A').format(MonitorPlot._V_LABELS[i], self.V_data[:, i][-1], self.A_data[:, i][-1])) for i in range(6)]
+		self._T_lines = [
+			self._T_plot.semilogy(self._time_data, self.T_data[:, i], color=MonitorPlot._get_line_color(i), linestyle=MonitorPlot._get_line_style(i), label=('{:<15}{:>7.3f} K').format(MonitorPlot._T_LABELS[i], self.T_data[:, i][-1]))
+			for i in range(19)
+		]
+		self._V_lines = [
+			self._V_plot.plot(self._time_data, self.V_data[:, i], color=MonitorPlot._get_line_color(i), label=('{:<15}{:>7.3f} V {:>7.3f} A').format(MonitorPlot._V_LABELS[i], self.V_data[:, i][-1], self.A_data[:, i][-1]))
+			for i in range(6)
+		]
 		self._P_lines = [
-			self._P_plot.semilogy(self._time_data, self.P_data, label=('Pressure {:>7.3f} mbar').format(self.P_data[-1,0]))
+			self._P_plot.semilogy(self._time_data, self.P_data[:, i], label=('Pressure {:>7.3f} mbar').format(self.P_data[:,i][-1]))
+			for i in range(1)
 		]
 
 		# Create and cache the legends
