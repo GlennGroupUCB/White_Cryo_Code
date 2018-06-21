@@ -184,7 +184,7 @@ class MonitorPlot:
 		# Redraw the plot if requested
 		if redraw:
 			self._T_plot.set_xlim(self._time_data[0], self._time_data[-1] + self._sleep_minutes * 2)
-			time_str = 'Current Time  -  {:0<2d}:{:0<2d}:{:0>6.3f}'.format(int(time // 3600), int(time // 60), time % 60)
+			time_str = 'Current Time  -  {:0>2d}:{:0>2d}:{:0>6.3f}'.format(int(time // 3600), int(time // 60), time % 60)
 			if self._plot_pressure:
 				self._P_plot.set_xlabel('Time Since Start (mins)\n\n{}'.format(time_str))
 			else:
@@ -198,4 +198,4 @@ class MonitorPlot:
 		
 		:param float sleep_interval: The number of seconds to sleep, or None to use the time passed to the constructor
 		"""
-		plt.pause(sleep_interval if sleep_interval is not None else self._sleep)
+		plt.pause(float(sleep_interval) if sleep_interval is not None else self._sleep)
