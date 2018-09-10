@@ -160,6 +160,7 @@ def switchOn():
 			#If ADR is already on...
 			#if -1< temps[18] <1.25:
 			#	count = 2
+			### POTENTIAL BUG BELOW (incorrect use of `and` with `temps[16] and temps[17]``)
 			if temps[16] and temps[17] < 1.3 and temps[18]!=-1 and count == 0:
 				#if He3 and He4 are below 1.3K turn on ADR switch
 				ag49.write('INST:SEL OUT1')
