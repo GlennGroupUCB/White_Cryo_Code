@@ -19,18 +19,20 @@ class InterruptServer():
     Make sure to call close() when you are done with the listener.
     '''
     
-    def __init__(self, addr='localhost', port=8888, password=None):
+    def __init__(self, addr='localhost', port=8888, password=None, temprange=(0.05, 0.25)): # TODO: Check the hardcoded temp range values
         '''
         Prepares (but does not open) a connection to listen for temperature change requests.
 
         :param str addr: The address to use for the connection (defaults to localhost).
         :param int port: The port to listen on for packets (defaults to 8888).
         :param str password: The password to use for authentication, empty string for no password, or None to prompt at runtime.
+        :param (float,float) temprange: The range of temperatures to accept as valid (in Kelvin).
         '''
         self._address = (addr, port)
         self._authkey = (password if password is not None else str(input('Please enter the password to use for the server (empty for no password) > '))).strip()
         self._listener = None
         self._connection = None
+        self._temprange = temprange
 
     def open(self):
         '''
@@ -40,6 +42,12 @@ class InterruptServer():
             print('Warning: the ADR interrupt listener cannot be opened twice.')
             return
         self._listener = mpc.Listener(self._address, 'AF_INET', authkey=(self._authkey if len(self._authkey) > 0 else None))
+
+    def is_open(self):
+        '''
+        Returns if the server is currently open and listening.
+        '''
+        return self._listener is not None
 
     def poll(self):
         '''
@@ -70,8 +78,12 @@ class InterruptServer():
             return None
         try:
             new_temp = float(packet)
-            self._connection.send((True, str(new_temp)))
-            return new_temp
+            if self._temprange[0] < new_temp < self._temprange[1]:
+                self._connection.send((True, str(new_temp)))
+                return new_temp
+            else:
+                self._connection.send((False, 'The temperature sent is outside of the valid range ({} -> {})'.format(self._temprange[0], self._temprange[1])))
+                return None
         except ValueError:
             print('Listener received a packet, but it was not formatted as a float')
             self._connection.send((False, 'Packet was not formatted as a float.'))
