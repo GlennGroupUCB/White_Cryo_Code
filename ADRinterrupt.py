@@ -2,12 +2,16 @@ from __future__ import print_function
 import multiprocessing.connection as mpc
 from multiprocessing import AuthenticationError
 from multiprocessing import TimeoutError
-from multiprocessing import Queue
+import select
+
+mpc.Listener.fileno = lambda self: self._listener._socket.fileno()
 
 # This file is used to send and receive packets between programs that can be used to control the
 #   temperature setting for the cryostat. See ADR.py on how the program can be used to receive
 #   packets.
 # Created by Sean Moss on 8/24/18
+# History:
+#   9/18/18 - Fixed blocking call
 
 
 class InterruptServer():
@@ -20,7 +24,7 @@ class InterruptServer():
     Make sure to call close() when you are done with the listener.
     '''
     
-    def __init__(self, addr='localhost', port=8888, password=None, temprange=(0.05, 0.25)): # TODO: Check the hardcoded temp range values
+    def __init__(self, addr='localhost', port=8888, password='', temprange=(0.05, 0.25)): # TODO: Check the hardcoded temp range values
         '''
         Prepares (but does not open) a connection to listen for temperature change requests.
 
@@ -34,7 +38,6 @@ class InterruptServer():
         self._listener = None
         self._connection = None
         self._temprange = temprange
-        self._connProcess = None
         self._lastPacket = None
 
     def open(self):
@@ -45,8 +48,6 @@ class InterruptServer():
             print('Warning: the ADR interrupt listener cannot be opened twice.')
             return
         self._listener = mpc.Listener(self._address, 'AF_INET', authkey=(self._authkey if len(self._authkey) > 0 else None))
-        #self._connProcess = 
-        #self._connProcess.start()
 
     def try_connect(self, c):
         pass
@@ -64,14 +65,26 @@ class InterruptServer():
         '''
         if self._listener is None: # A connection has not been made yet
             return None
+        if self._connection is None: # No connection yet, perform a non-blocking check for a pending connection
+            try:
+                sr, _, _ = select.select((self._listener,), (), (), 0)
+                if self._listener in sr:
+                    self._connection = self._listener.accept()
+                    print('Server: Accepted interrupt client connection from {}'.format(self._listener.last_accepted))
+            except Exception as e:
+                print ('Server: unknown exception while trying to wait for connections: {}'.format(e))
+            return None
 
         packet = None
         try:
             if self._connection.poll():
                 packet = self._connection.recv()
-        except EOFError:
-            print('The client disconnected from the listener.')
+        except EOFError, IOError:
+            print('Server: The client disconnected from the listener.')
             self._connection = None
+            return None
+        except Exception as e:
+            print ('Server: unknown exception while trying to poll/recv packet: {}'.format(e))
             return None
         
         if packet is None:
@@ -85,19 +98,23 @@ class InterruptServer():
                 self._connection.send((False, 'The temperature sent is outside of the valid range ({} -> {})'.format(self._temprange[0], self._temprange[1])))
                 return None
         except ValueError:
-            print('Listener received a packet, but it was not formatted as a float')
+            print('Server: Listener received a packet, but it was not formatted as a float')
             self._connection.send((False, 'Packet was not formatted as a float.'))
+            return None
+        except Exception as e:
+            print ('Server: unknown exception while trying to parse packet: {}'.format(e))
             return None
 
     def close(self):
         if self._listener is not None:
-            self._listener.close()
+            try:
+                self._listener.close()
+            except Exception: pass
             self._listener = None
-            #self._connProcess.terminate()
-            #self._connProcess.join()
-            #self._connProcess = None
         if self._connection is not None:
-            self._connection.close()
+            try:
+                self._connection.close()
+            except Exception: pass
             self._connection = None
 
 
@@ -107,9 +124,12 @@ class InterruptClient():
 
     To use, create an instance, call open(), and then send(float) to send a temperature set request.
     send() will hang until a packet is received from the server with a result flag and message.
+
+    Please see the real_test() function in interrupt_test.py to see a very basic example of how to use
+    this class to change the temperature.
     '''
     
-    def __init__(self, addr='localhost', port=8888, password=None):
+    def __init__(self, addr='localhost', port=8888, password=''):
         '''
         Prepares (but does not open) a connection to send interrupt commands to the ADR interrupt listener.
 
@@ -134,6 +154,9 @@ class InterruptClient():
         except TimeoutError:
             print('ERROR: Connection attempt with ADR interrupt listener timed out.')
             return False
+        except Exception as e:
+            print ('ERROR: unknown exception while trying to connect to server: {}'.format(e))
+            return False
         return True
 
     def send(self, temp):
@@ -156,6 +179,9 @@ class InterruptClient():
         except TimeoutError:
             print('ERROR: The connection to the ADR listener timed out while sending, did the running instance of ADR.py close?')
             return False
+        except Exception as e:
+            print ('Server: unknown exception while trying to send packet to server: {}'.format(e))
+            return False
 
         packet = None
         try:
@@ -164,6 +190,9 @@ class InterruptClient():
                 packet = (bool(rbytes[0]), str(rbytes[1]))
         except TimeoutError:
             print('ERROR: The server accepted the interrupt packet, but did not acknowledge it. Check ADR.py for cryostat state.')
+            return False
+        except Exception as e:
+            print ('Server: unknown exception while trying to receive confirmation packet from server: {}'.format(e))
             return False
 
         if packet is None:
@@ -176,5 +205,7 @@ class InterruptClient():
 
     def close(self):
         if self._client is not None:
-            self._client.close()
+            try:
+                self._client.close()
+            except Exception: pass
             self._client = None
