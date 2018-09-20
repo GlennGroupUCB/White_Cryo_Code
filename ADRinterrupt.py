@@ -79,7 +79,7 @@ class InterruptServer():
         try:
             if self._connection.poll():
                 packet = self._connection.recv()
-        except EOFError, IOError:
+        except (EOFError, IOError) as e:
             print('Server: The client disconnected from the listener.')
             self._connection = None
             return None
