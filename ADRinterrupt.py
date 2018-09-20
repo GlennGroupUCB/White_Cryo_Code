@@ -2,6 +2,7 @@ from __future__ import print_function
 import multiprocessing.connection as mpc
 from multiprocessing import AuthenticationError
 from multiprocessing import TimeoutError
+from multiprocessing import Queue
 
 # This file is used to send and receive packets between programs that can be used to control the
 #   temperature setting for the cryostat. See ADR.py on how the program can be used to receive
@@ -29,10 +30,12 @@ class InterruptServer():
         :param (float,float) temprange: The range of temperatures to accept as valid (in Kelvin).
         '''
         self._address = (addr, port)
-        self._authkey = (password if password is not None else str(input('Please enter the password to use for the server (empty for no password) > '))).strip()
+        self._authkey = (password if password is not None else str(raw_input('Please enter the password to use for the server (empty for no password) > '))).strip()
         self._listener = None
         self._connection = None
         self._temprange = temprange
+        self._connProcess = None
+        self._lastPacket = None
 
     def open(self):
         '''
@@ -42,6 +45,11 @@ class InterruptServer():
             print('Warning: the ADR interrupt listener cannot be opened twice.')
             return
         self._listener = mpc.Listener(self._address, 'AF_INET', authkey=(self._authkey if len(self._authkey) > 0 else None))
+        #self._connProcess = 
+        #self._connProcess.start()
+
+    def try_connect(self, c):
+        pass
 
     def is_open(self):
         '''
@@ -52,17 +60,9 @@ class InterruptServer():
     def poll(self):
         '''
         Performs a non-blocking check for waiting packets from Clients. Returns None if there are no packets, or a float with the new
-        requested temperature, in Kelvin. This float is not checked for validity so the caller needs to check.
+        requested temperature, in Kelvin.
         '''
-        if self._listener is None: # open() has not been called yet
-            return None
-        if self._connection is None: # try to accept a new connection object
-            try:
-                self._connection = self._listener.accept()
-                if self._connection is not None:
-                    print('A connection was made for ADR interrupts from {}.'.format(self._listener.last_accepted))
-            except AuthenticationError:
-                print ('A connection was attempted, but failed the authentication.')
+        if self._listener is None: # A connection has not been made yet
             return None
 
         packet = None
@@ -93,6 +93,9 @@ class InterruptServer():
         if self._listener is not None:
             self._listener.close()
             self._listener = None
+            #self._connProcess.terminate()
+            #self._connProcess.join()
+            #self._connProcess = None
         if self._connection is not None:
             self._connection.close()
             self._connection = None
@@ -115,7 +118,7 @@ class InterruptClient():
         :param str password: The password to use for authentication, empty string for no password, or None to prompt at runtime.
         '''
         self._address = (addr, port)
-        self._authkey = (password if password is not None else str(input('Please enter the password for the ADR interrupt listener > '))).strip()
+        self._authkey = (password if password is not None else str(raw_input('Please enter the password for the ADR interrupt listener > '))).strip()
         self._client = None
 
     def open(self):
@@ -156,7 +159,7 @@ class InterruptClient():
 
         packet = None
         try:
-            if self._client.poll(timeout=5):
+            if self._client.poll(5):
                 rbytes = self._client.recv()
                 packet = (bool(rbytes[0]), str(rbytes[1]))
         except TimeoutError:

@@ -3,7 +3,7 @@ This is for testing the ADR interrupt code.
 '''
 
 from ADRinterrupt import InterruptClient, InterruptServer
-import multiprocessing
+import threading
 import time
 
 
@@ -36,14 +36,12 @@ def client_thread():
 
 
 def main():
-    s_task = multiprocessing.Process(target=server_thread)
-    s_task.daemon = True
-    c_task = multiprocessing.Process(target=client_thread)
-    c_task.daemon = True
+    s_task = threading.Thread(target=server_thread)
+    c_task = threading.Thread(target=client_thread)
     s_task.start()
-    c_task.start()
+    #c_task.start()
     s_task.join()
-    c_task.join()
+    #c_task.join()
 
 
 if __name__ == '__main__':
