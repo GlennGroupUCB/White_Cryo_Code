@@ -15,6 +15,7 @@ import matplotlib.gridspec as gridspec
 import sys
 import power_supply as ps
 from monitor_plot import MonitorPlot
+from ADRinterrupt import InterruptClient
 
 #Program to monitor the temperatures of the cyrostat
 #written by Jordan at some date lost in time. 
@@ -28,6 +29,7 @@ from monitor_plot import MonitorPlot
 #02/??/18 - Jordan - cleaned up printing to screen
 #03/09/18 - Jordan - incorporated cooldown.py as a mode in this code
 #05/31/18 - Sean - changed the plotting code to use the new MonitorPlot class in monitor_plot.py
+#8/30/18 - Sean added the InterruptClient code to allow the temperature to be changed from this program
 
 #TO DO 
 #the power supplies need to call power_supply.py
