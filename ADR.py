@@ -8,6 +8,7 @@ from functions import get_temps
 import csv
 import threading
 from Tkinter import *
+import argparse
 
 from ADRinterrupt import InterruptServer
 
@@ -26,6 +27,7 @@ from ADRinterrupt import InterruptServer
 # also also added time.sleep(5) whenever you change dIdt so that it has time to settle
 # before measuring the resistance of the magnet
 #8/30/18 - Sean added the InterruptServer code to allow the temperature to be changed from other programs
+#9/24/18 - Sean added the init_count() function
 '''
 READ ME:
 This script is written to be run after fridge_cycle.py and the ADR switch off.
@@ -61,12 +63,23 @@ count = 7 => ramp down state stay at specified temperature
 '''
 auto_start = 1 #0 don't auto start 1 do auto start
 
+# Allows count to be set by a command line argument of the form `--count #` or `-c #`
+def init_count():
+	argp = argparse.ArgumentParser()
+	argp.add_argument('-c', '--count', dest='count', type=int, nargs=1, default=0)
+	try:
+		result = argp.parse_args()
+	except Exception: 
+		print('Using count=0')
+		return 0
+	return result.count
+
 Alarm = 0
 temp = 0
 L = 16 #magnet Inductance
 running = True
 first = True
-count=0 #you can change this to start part way through
+count = init_count() # Allows count to be set with a command line argument
 t=0
 t0=0
 sleep_time = 0
@@ -75,7 +88,7 @@ dIdt = 0
 tk_app = None
 
 # create (but dont open) the interrupt server
-interrupt_server = InterruptServer(password=None)
+interrupt_server = InterruptServer(password='')
 
 #open connection to ADR switch power supply
 rm = visa.ResourceManager()
