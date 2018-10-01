@@ -29,12 +29,16 @@ def client_thread():
     tosend = [ 1.3, 0.05, 18, 'trash', '14', True ]
     for data in tosend:
         client.send(data)
+        client.wait()
+        print('Last client data: ({})  {}'.format(client.lastResult[0], client.lastResult[1]))
         time.sleep(2)
     client.close()
     client.open()
     tosend.reverse()
     for data in tosend:
         client.send(data)
+        client.wait()
+        print('Last client data: ({})  {}'.format(client.lastResult[0], client.lastResult[1]))
         time.sleep(2)
     client.send(0)
     client.close()
@@ -44,7 +48,6 @@ def local_test():
     s_task = threading.Thread(target=server_thread)
     c_task = threading.Thread(target=client_thread)
     s_task.start()
-    time.sleep(2.5)
     c_task.start()
     s_task.join()
     c_task.join()

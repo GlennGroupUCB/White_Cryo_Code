@@ -2,7 +2,9 @@ from __future__ import print_function
 import multiprocessing.connection as mpc
 from multiprocessing import AuthenticationError
 from multiprocessing import TimeoutError
+from threading import Thread
 import select
+import time
 
 mpc.Listener.fileno = lambda self: self._listener._socket.fileno()
 
@@ -24,7 +26,7 @@ class InterruptServer():
     Make sure to call close() when you are done with the listener.
     '''
     
-    def __init__(self, addr='localhost', port=8888, password='', temprange=(0.05, 0.25)): # TODO: Check the hardcoded temp range values
+    def __init__(self, addr='localhost', port=8888, password='', temprange=(0.05, 0.5)):
         '''
         Prepares (but does not open) a connection to listen for temperature change requests.
 
@@ -48,9 +50,6 @@ class InterruptServer():
             print('Warning: the ADR interrupt listener cannot be opened twice.')
             return
         self._listener = mpc.Listener(self._address, 'AF_INET', authkey=(self._authkey if len(self._authkey) > 0 else None))
-
-    def try_connect(self, c):
-        pass
 
     def is_open(self):
         '''
@@ -123,23 +122,32 @@ class InterruptClient():
     Acts as the sending end of the interrupt packets.
 
     To use, create an instance, call open(), and then send(float) to send a temperature set request.
-    send() will hang until a packet is received from the server with a result flag and message.
+    send() will return immediately with a return value of whether or not the server accepted the packet.
+    After send(), the `waiting` member will be True until the server sends a packet explaining if the
+    packet was valid. This result will be stored in the `lastResult` member.
 
     Please see the real_test() function in interrupt_test.py to see a very basic example of how to use
     this class to change the temperature.
+
+    The `lastResult` member is a 2-tuple. The first member is a boolean representing the status of the
+    last packet sent. The second members is a string giving a message about the last packet.
     '''
     
-    def __init__(self, addr='localhost', port=8888, password=''):
+    def __init__(self, addr='localhost', port=8888, password='', timeout=7):
         '''
         Prepares (but does not open) a connection to send interrupt commands to the ADR interrupt listener.
 
         :param str addr: The address to connect to (defaults to localhost).
         :param int port: The port to send packets on (defaults to 8888).
         :param str password: The password to use for authentication, empty string for no password, or None to prompt at runtime.
+        :param float timeout: The amount of seconds to wait for the server to send a response to a packet.
         '''
         self._address = (addr, port)
         self._authkey = (password if password is not None else str(raw_input('Please enter the password for the ADR interrupt listener > '))).strip()
         self._client = None
+        self.waiting = False
+        self.lastResult = (False, None)
+        self._timeout = timeout
 
     def open(self):
         '''
@@ -162,11 +170,14 @@ class InterruptClient():
     def send(self, temp):
         '''
         Sends the temperature interrupt as a float, given in Kelvins. This method will block until it reveives a message from the listener,
-        or 5 seconds pass. Returns True if the interrupt was accepted, False otherwise.
+        or self._timeout seconds pass. Returns True if the packet was sent, False otherwise.
 
         :param float temp: The temperature to set the ADR target to, in Kelvin.
         '''
         if self._client is None:
+            return False
+        if self.waiting:
+            print('Unable to send another temperature packet until the server acknowledges the last one.')
             return False
         try:
             temp = float(temp)
@@ -183,27 +194,53 @@ class InterruptClient():
             print ('Server: unknown exception while trying to send packet to server: {}'.format(e))
             return False
 
-        packet = None
-        try:
-            if self._client.poll(5):
-                rbytes = self._client.recv()
-                packet = (bool(rbytes[0]), str(rbytes[1]))
-        except TimeoutError:
-            print('ERROR: The server accepted the interrupt packet, but did not acknowledge it. Check ADR.py for cryostat state.')
-            return False
-        except Exception as e:
-            print ('Server: unknown exception while trying to receive confirmation packet from server: {}'.format(e))
-            return False
+        def _wait_function(client):
+            packet = None
+            try:
+                if client._client.poll(client._timeout):
+                    rbytes = client._client.recv()
+                    packet = (bool(rbytes[0]), str(rbytes[1]))
+            except TimeoutError:
+                client.lastResult = (False, 'The server accepted the interrupt packet, but did not acknowledge it. Check ADR.py for cryostat state.')
+                return
+            except Exception as e:
+                client.lastResult = (False, 'Unknown exception while trying to receive confirmation packet from server: {}'.format(e))
+                return
+            finally:
+                client.waiting = False
 
-        if packet is None:
-            print('ERROR: The server accepted the interrupt packet, but did not acknowledge it. Check ADR.py for cryostat state.')
-            return False
-        if packet[0]:
-            print('SUCCESS: The ADR listener accepted the packet, temperature: {}'.format(packet[1]))
-        else:
-            print('ERROR: The ADR listener rejected the packet, reason: "{}"'.format(packet[1]))
+            if packet is None:
+                client.lastResult = (False, 'The server accepted the interrupt packet, but did not acknowledge it. Check ADR.py for cryostat state.')
+                return
+            if packet[0]:
+                client.lastResult = (True, 'The ADR listener accepted the packet, temperature: {}'.format(packet[1]))
+                return
+            else:
+                client.lastResult = (False, 'The ADR listener rejected the packet, reason: "{}"'.format(packet[1]))
+                return
+
+        self.waiting = True
+        Thread(target=_wait_function, args=(self,)).start()
+
+    def wait(self, wait_timeout=None):
+        '''
+        Performs a blocking wait until the client receives a confirmation packet from the server. Returns immediately if not already
+        waiting. Returns the amount of time it waited for.
+
+        :param float wait_timeout: The number of seconds to wait for the response, `None` to wait indefinitely.
+        '''
+        wait_time = 0
+        while self.waiting:
+            time.sleep(0.01)
+            wait_time += 0.01
+            if wait_timeout is not None and wait_time >= wait_timeout:
+                break
+        return wait_time
 
     def close(self):
+        '''
+        Closes the client. Should be called when you are done with the client, however is also automatically called at cleanup.
+        '''
         if self._client is not None:
             try:
                 self._client.close()
