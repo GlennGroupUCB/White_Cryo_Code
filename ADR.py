@@ -8,6 +8,9 @@ from functions import get_temps
 import csv
 import threading
 from Tkinter import *
+import argparse
+
+from ADRinterrupt import InterruptServer
 
 
 #TO DO:
@@ -23,6 +26,8 @@ from Tkinter import *
 #3/12/18 -Jordan changed ramp down rates to be negative so resistance in calculted correctly
 # also also added time.sleep(5) whenever you change dIdt so that it has time to settle
 # before measuring the resistance of the magnet
+#8/30/18 - Sean added the InterruptServer code to allow the temperature to be changed from other programs
+#9/24/18 - Sean added the init_count() function
 '''
 READ ME:
 This script is written to be run after fridge_cycle.py and the ADR switch off.
@@ -58,17 +63,33 @@ count = 7 => ramp down state stay at specified temperature
 '''
 auto_start = 1 #0 don't auto start 1 do auto start
 
+# Allows count to be set by a command line argument of the form `--count #` or `-c #`
+def init_count():
+	argp = argparse.ArgumentParser()
+	argp.add_argument('-c', '--count', dest='count', type=int, nargs=1, default=0)
+	try:
+		result = argp.parse_args()
+	except Exception: 
+		print('Using count=0')
+		return 0
+	return result.count
+
 Alarm = 0
 temp = 0
 L = 16 #magnet Inductance
 running = True
 first = True
-count=0 #you can change this to start part way through
+count = init_count() # Allows count to be set with a command line argument
 t=0
 t0=0
 sleep_time = 0
 fiftyK = range(0,1)
 dIdt = 0
+tk_app = None
+
+# create (but dont open) the interrupt server
+interrupt_server = InterruptServer(password='')
+
 #open connection to ADR switch power supply
 rm = visa.ResourceManager()
 ag49 = rm.open_resource('GPIB1::3::INSTR') #power supply 3647 on top row of rack
@@ -160,6 +181,7 @@ def switchOn():
 			#If ADR is already on...
 			#if -1< temps[18] <1.25:
 			#	count = 2
+			### POTENTIAL BUG BELOW (incorrect use of `and` with `temps[16] and temps[17]``)
 			if temps[16] and temps[17] < 1.3 and temps[18]!=-1 and count == 0:
 				#if He3 and He4 are below 1.3K turn on ADR switch
 				ag49.write('INST:SEL OUT1')
@@ -345,12 +367,23 @@ def rampD():
 def check():
 	#check cryostat temperatures and mag resistance
 	#also driver function for ramping
+	# This function runs when count == 3 (once), 4 (loop), or 7 (loop)
 	global count
 	global t
 	global temps
 	global curr
 	global fiftyK
 	global dIdt
+	global interrupt_server
+	global temp
+	global tk_app
+
+	new_inter_temp = interrupt_server.poll()
+	if new_inter_temp is not None:
+		print('> Received interrupt packet, changing temp to {} K.'.format(new_inter_temp))
+		temp = new_inter_temp
+		tk_app.myentry.delete(0, END)
+		tk_app.myentry.insert(END, str(new_inter_temp))
 	
 	try:
 		t = time.time() - t0
@@ -699,6 +732,8 @@ class App:
 		self.master.mainloop()
 
 
-App()
+interrupt_server.open()
+tk_app = App()
+interrupt_server.close()
 ami.close()
 csvfile.close()

@@ -50,3 +50,7 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+
+# The python cache files
+__pycache__/
+\.vscode/

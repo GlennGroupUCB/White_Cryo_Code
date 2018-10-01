@@ -13,6 +13,7 @@ import matplotlib.gridspec as gridspec
 from functions import read_power_supplies, get_temps, initialize
 from scipy import interpolate
 import sys
+from monitor_plot import MonitorPlot
 
 #########################################################
 #      Program to cycle the Chase fridge                #
@@ -23,8 +24,10 @@ import sys
 #CHANGE LOG
 #8/7/17 - Added menu to prompt user for start time and adr switch
 #1/23/18 -Jordan putting finished back in for the while loop so that it can auto trigger ADR.py when it is done
-#1/25/18 - Jordan made it so instead of sleeping until starting the fridge cycle it just starts at t<0 and 
-# doesn't do anything until t=0
+#1/25/18 - Jordan made it so instead of sleeping until starting the fridge cycle it just starts at t<0 and
+# 			doesn't do anything until t=0
+#5/31/18 - Sean - Integrated the new MonitorPlot class into this script
+
 finished = 0
 
 t_cool_He3_pump = 160.
@@ -108,14 +111,10 @@ Alarm = 0 # 0 for off 1 for on
 now = datetime.datetime.now()
 date_str = str(now)[0:10]
 # we want the file prefix to reflect the date in which the temperature data is taken
-file_prefix =  "C:/Users/tycho/Desktop/White_Cryo_Code/Temps/" + date_str
+file_prefix =  "./Temps/" + date_str
 file_suffix = ''
-file_prefix2 =  "C:/Users/tycho/Desktop/White_Cryo_Code/Voltage_Current/" + date_str
+file_prefix2 =  "./Voltage_Current/" + date_str
 file_suffix2 = ''
-
-plt.figure(1,figsize = (21,11))
-ax = plt.gca() #need for changing legend labels
-
 
 #do a check to make sure the  he3 and he4 switches have cooled
 temps = get_temps()
@@ -124,20 +123,9 @@ if temps[9] >15. or temps[10]>15:
 	if sleep_time<20*60 and sleep_time>-1:
 		sleep_time = 20*60
 
-# adds in delay time as negative time
-x = np.arange(-420,0)*sleep_interval/60.-sleep_time/60. # initialize the x axis i.e. time going 420 mins into the past
-print(x[0],x[419])
-y = np.ones((420,19))*-1 #initialize array to hold temperature
-volt_y = np.zeros((420,6)) #initialize array to hold voltages
-curr_y = np.zeros((420,6)) #initialize array to hold currents
-
-
-plt.title("Thermometry")
-plt.xlabel("time (mins)")
-plt.ylabel("Temperature (K)")
-plt.ion() 					#need for constantly updating plot
-gs = gridspec.GridSpec(3,3)	#allows for custom subplot layout
-plt.show()
+# Create and open the monitoring plot
+monitor_plot = MonitorPlot(sleep_interval, 420, plot_pressure=False)
+monitor_plot.show()
 
 start = time.time()+sleep_time #define a start time here if we have a delay we just start at t<0
 if os.path.isfile(file_prefix + '_temps_fridgecycle.txt') == True: #check if there is already a file with the prefix we are trying to use
@@ -158,48 +146,54 @@ try: #allows you to kill the loop with ctrl c
 		if str(now)[0:10] != date_str: #checks if the day has changed (i.e.) at midnight,if it is a new day start a new file
 			f.close() #close the old file
 			date_str = str(now)[0:10]
-			file_prefix =  "C:/Users/tycho/Desktop/White_Cryo_Code/Temps/" + date_str
+			file_prefix =  "./Temps/" + date_str
 			file_suffix = ''
-			file_prefix2 =  "C:/Users/tycho/Desktop/White_Cryo_Code/Voltage_Current/" + date_str
+			file_prefix2 =  "./Voltage_Current/" + date_str
 
 
 			f = open(file_prefix + file_suffix +'_temps.txt' ,'w') #open a new file to write the temperatures to
 			g = open(file_prefix2 + file_suffix +'_VI.txt' ,'w')
 
+		# Current time
+		new_time = time.time()-start
 
+		# Poll the new data
+		new_temps = get_temps()
+		_, new_volt, new_curr = read_power_supplies()
+		power_labels = MonitorPlot.get_volt_labels()
 
-		t = time.time()-start #current time
-		x = np.roll(x,-1) #shift the time array by 1 interval
-		x[419] = t/60. #record current time to last position of time array
-		y = np.roll(y,-1,axis = 0) # shift temperature array by 1 interval
-		volt_y = np.roll(volt_y,-1,axis = 0) #shift voltage array by 1 interval
-		curr_y = np.roll(curr_y,-1,axis = 0) #shift current array by 1 interval
+		# Update the plot
+		monitor_plot.update(new_time, new_temps, new_volt, new_curr, [0])
 
-		#grab temperatures and store them to the temperature array
-		temps = get_temps()
-		y[419,:] = temps
+		# Get shorthands for the data
+		t = new_time
+		y = monitor_plot.T_data
+		volt_y = monitor_plot.V_data
+		curr_y = monitor_plot.A_data
+		temps = new_temps
+		volt = new_volt
+		curr = new_curr
+
 		# should be able to load all of them at once
-		lk218_T1 = y[419,0]
-		lk218_T2 = y[419,1]
-		lk218_T3 = y[419,2]
-		lk218_T4 = y[419,3]
-		lk218_T5 = y[419,4]
-		lk218_T6 = y[419,5]
-		lk218_T8 = y[419,6]
-		lk224_TC2 = y[419,7]
-		lk224_TC3 = y[419,8]
-		lk224_TC4 = y[419,9]
-		lk224_TC5 = y[419,10]
-		lk224_TD1 = y[419,11]
-		lk224_TD2 = y[419,12]
-		lk224_TD3 = y[419,13]
-		lk224_TD4 = y[419,14]
-		lk224_TD5 = y[419,15]
-		lk224_A = y[419,16]
-		lk224_B = y[419,17]
-		lr750_a_temp = y[419,18]
-
-
+		lk218_T1 = y[-1,0]
+		lk218_T2 = y[-1,1]
+		lk218_T3 = y[-1,2]
+		lk218_T4 = y[-1,3]
+		lk218_T5 = y[-1,4]
+		lk218_T6 = y[-1,5]
+		lk218_T8 = y[-1,6]
+		lk224_TC2 = y[-1,7]
+		lk224_TC3 = y[-1,8]
+		lk224_TC4 = y[-1,9]
+		lk224_TC5 = y[-1,10]
+		lk224_TD1 = y[-1,11]
+		lk224_TD2 = y[-1,12]
+		lk224_TD3 = y[-1,13]
+		lk224_TD4 = y[-1,14]
+		lk224_TD5 = y[-1,15]
+		lk224_A = y[-1,16]
+		lk224_B = y[-1,17]
+		lr750_a_temp = y[-1,18]
 
 		#fridge cycle crap starts here
 		#the way I am doing it is a bit weird we are just continuously looping
@@ -297,48 +291,13 @@ try: #allows you to kill the loop with ctrl c
 			seconds = int(t-(60*minutes))
 		#print('Cycle duration: ',minutes, ':', seconds)
 
-		k = 0 #intiialize a counter
-
-		plt.subplot(gs[0:2,:]) #create top subplot
-		for j in plots: #plot all of the temperatures with appropriate labels
-			plt.semilogy(x,y[:,j],color = colors[np.mod(j,7)],linestyle = lines[j/7],linewidth = 2, label = labels[j]+" " +str(y[419,j])[0:5]+"K")
-			if i != 0:
-				legend.get_texts()[k].set_text(labels[j]+" " +str(y[419,j])[0:5]+"K") #if it is not the first time ploting rewrite the legend with the new temps
-			k = k+1
-		#if it is the first time plotting generate the legend
-		if i == 0:
-			legend = plt.legend(ncol = 2,loc = 1, bbox_to_anchor=(0.3, 1.15), fancybox=True, shadow=True)
-		plt.xlim(x[0],x[419])
-		plt.ylim(0.1,300)
-
-		#grab voltages and current from power supplies
-		power_labels, volt, curr = read_power_supplies()
-		volt_y[419,:]= volt
-		curr_y[419,:]= curr
-
-
-		# plot the power levels
-		plt.subplot(gs[2,:])
-		k = 0
-		for j in range(0,len(volt)):
-			plt.plot(x,volt_y[:,j],color = colors[np.mod(j,7)],linestyle = lines[j/7],linewidth = 2, label = power_labels[j]+ " " +str(volt_y[419,j])[0:4]+"V " + str(curr_y[419,j])[0:6]+"A")
-			if i != 0:
-				legend_power.get_texts()[k].set_text(power_labels[j]+" " +str(volt_y[419,j])[0:4]+"V "+ str(curr_y[419,j])[0:6]+"A")#if it is not the first time ploting rewrite the legend with the new temps
-			k = k+1
-		if i ==0:
-			legend_power= plt.legend(ncol = 2,loc = 2, fancybox=True, shadow=True)	 #If it is the first time plotting generate the legend
-		plt.xlim(x[0],x[419])
-		plt.ylim(0,30)
-
-
-
-
 		#Alarm function
+		DisableTextAlarm = False # This can be flipped to disable the text message alerts if testing directly on tycho
 		if Alarm != 0: #if the alarm is turned on proceed
 			Alarm_test = y[419,:]*Alarm_on #0 if not on otherwise actual temperature
 			if (Alarm_test>(Alarm_value +.001)).any() == True: #have any of the alarm values been reached
 				print("Alarm Alarm")
-				if Alarm == 1: # we only want it to send us texts once not over and over again
+				if Alarm == 1 and not DisableTextAlarm: # we only want it to send us texts once not over and over again
 					print("first occurrence")
 					fromaddr = 'SubmmLab@gmail.com'
 					toaddrs  = '3145741711@txt.att.net' #jordan
@@ -364,11 +323,11 @@ try: #allows you to kill the loop with ctrl c
 			print('#Human readable time. Time (s) since start. V @ ag47t. A @ ag47t. V @ ag47b. A @ ag47b. V @ ag49. A @ ag49.', file=g)
 
 		# write temps to file
-		print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(y[419,0])+' '+ str(y[419,1])+' '+ str(y[419,2])+' '+ str(y[419,3])+' '+ str(y[419,4])+' '+ str(y[419,5])+' '+ str(y[419,6])+' '+ str(y[419,7])+' '+ str(y[419,8])+' '+ str(y[419,9])+' '+ str(y[419,10])+' '+ str(y[419,11])+' '+ str(y[419,12])+' '+ str(y[419,13])+' '+ str(y[419,14])+' '+ str(y[419,15])+' '+ str(y[419,16])+' '+ str(y[419,17])+' '+str(y[419,18]), file = f) #print the temperature and some nonsense numbers to the file
+		print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(y[-1,0])+' '+ str(y[-1,1])+' '+ str(y[-1,2])+' '+ str(y[-1,3])+' '+ str(y[-1,4])+' '+ str(y[-1,5])+' '+ str(y[-1,6])+' '+ str(y[-1,7])+' '+ str(y[-1,8])+' '+ str(y[-1,9])+' '+ str(y[-1,10])+' '+ str(y[-1,11])+' '+ str(y[-1,12])+' '+ str(y[-1,13])+' '+ str(y[-1,14])+' '+ str(y[-1,15])+' '+ str(y[-1,16])+' '+ str(y[-1,17])+' '+str(y[-1,18]), file = f) #print the temperature and some nonsense numbers to the file
 		print(str(np.round(t,3)).strip()+' ',end = '')
 		for k in plots:
 			# write to command prompt
-			print(str(y[419, k])+" ",end = '')
+			print(str(y[-1, k])+" ",end = '')
 		print('')#print newline
 
 
@@ -376,7 +335,7 @@ try: #allows you to kill the loop with ctrl c
 		#print the current and voltage to the file
 		volt_str = ''
 		for k in range(0, len(volt)):
-			volt_str = volt_str + str(volt_y[419,k])
+			volt_str = volt_str + str(volt_y[-1,k])
 			if k!=len(volt)-1:
 				volt_str = volt_str + ","
 			#print(str(volt_y[419, k])+'V '+str(curr_y[419, k])+'I ', file = g)
@@ -385,10 +344,10 @@ try: #allows you to kill the loop with ctrl c
 			#print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ str(volt_y[419, k])+' '+ str(curr_y[419, k]))
 		print(str(now)+' '+ str(np.round(t,3)).strip()+' '+ volt_str,file = g)
 
-
 		i = i + 1 #icrement the counter
 
-		plt.pause(sleep_interval) # pause for sleep interval before looping again
+		# Wait the plot
+		monitor_plot.wait()
 
 	f.close()
 	g.close()
