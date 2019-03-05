@@ -1,10 +1,12 @@
 from __future__ import print_function
+import sys
 import visa
 import serial
 import time
 import os
 import datetime
-from functions import get_temps
+if "get_temps" not in sys.modules:
+	from functions import get_temps, read_power_supplies
 import csv
 import threading
 from Tkinter import *
@@ -51,7 +53,7 @@ It follows Addi's recipe for cooling the ADR down, ADR_cycle_soft_heatswitch_on.
 
 Code is run by moving from state to state as indicated by count
 count = 0 => waiting for user to start the ADR cycle
-count = 1 => Turn oan ADR switch and wait for it to heat up
+count = 1 => Turn on ADR switch and wait for it to heat up
 count = 2 => seems to be the same as count=1 not used anymore?
 when everything is the right temp proceed to 
 count = 3 => start ramp up to 10A
@@ -64,6 +66,7 @@ count = 7 => ramp down state stay at specified temperature
 auto_start = 1 #0 don't auto start 1 do auto start
 
 # Allows count to be set by a command line argument of the form `--count #` or `-c #`
+# valid choices are 0,3,6?,7
 def init_count():
 	argp = argparse.ArgumentParser()
 	argp.add_argument('-c', '--count', dest='count', type=int, nargs=1, default=0)
@@ -80,6 +83,11 @@ L = 16 #magnet Inductance
 running = True
 first = True
 count = init_count() # Allows count to be set with a command line argument
+try:
+	count = count[0]
+except:
+	count = 0
+print(count)
 t=0
 t0=0
 sleep_time = 0
@@ -200,12 +208,12 @@ def switchOn():
 				#count=2
 			if 16.8 > temps[12] > 15 and count == 1:
 				ag49.write('INST:SEL OUT1')
-				ag49.write('Volt 1.75')
-			if temps[18] <1.4 and temps[17] < 1.3 and temps[18]!=-1 and count == 1 and temps[12]>16.8:#1.25 1.15
+				ag49.write('Volt 1.85')#jordan changed 2/11/19 from 1.75 to 1.85
+			if temps[18] <1.4 and temps[17] < 1.3 and temps[18]!=-1 and count == 1 and temps[12]>16.7:#1.25 1.15
 				#wait till He4/ADR return to normal temp. before switch
 				print('ADR and He4 Stabalized')
 				ag49.write('INST:SEL OUT1')
-				ag49.write('Volt 1.65')
+				ag49.write('Volt 1.75') 
 				count=3
 				break
 			if temps[12] > 17.2:
@@ -430,7 +438,7 @@ def check():
 		#4k HTS
 		if temps[1] > 8:
 			alarm()
-		if temps[1] > 8.5:
+		if temps[1] > 10:
 			stop()
 		#4k Plate
 		if temps[15] > 5:
