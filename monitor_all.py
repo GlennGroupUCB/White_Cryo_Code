@@ -51,11 +51,11 @@ if __name__=='__main__':
 		
 Cold_enough = 0
 def cooldown(temps):
-	#print(temps[9],temps[4])
-	if temps[9] < 6.5 and temps[8] <6.5: #are the switches cold enough
+	#print(temps[9],temps[10])
+	if temps[9] < 8.5 and temps[10] <8.5: #are the switches cold enough
 		global Cold_enough
 		Cold_enough = 1
-		print("The cyostat is cold enough to turn on the pumps.")
+		#print("The cyostat is cold enough to turn on the pumps.")
 
 	#Heat up the 4He pump
 	if Cold_enough == 1 and temps[15]<12.: # if the switches have coold and just in case if the 4K plate gets to hot
@@ -81,8 +81,11 @@ def cooldown(temps):
 		ps.change_voltage('He3 pump',0)
 		
 	# turn on the ADR switch when it gets to cold to conduct	
-	if temps[12]<26.:
-		ps.change_voltage('ADR switch',1.75)
+	if temps[12]<30.:
+		if 0.1 <temps[18]<30:
+			ps.change_voltage('ADR switch',1.75)
+		else:
+			ps.change_voltage('ADR switch',2.75)
 	if temps[12]>30.: #temp should drop slowly
 		ps.change_voltage('ADR switch',0)
 	if temps[12]>35.: #just in case
