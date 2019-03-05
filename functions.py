@@ -17,14 +17,14 @@ from scipy import interpolate
 # 04/10/17 - added plot_and_write() function for use with fast monitor - Tim
 # 07/18/17 - removed plot_and_write() function temporarily
 # 11/01/17 - Turned off Pressure Gauge because wasn't connecting and throwing error
-# 1/23/17 -Jordan- fixed ADR readout problem by adding a delay
-# 1/25/17 - changed reading out the ADR to average 16 seperate readings taking 3 seconds to read it out
+# 1/23/17  - Jordan fixed ADR readout problem by adding a delay
+# 1/25/17  - changed reading out the ADR to average 16 seperate readings taking 3 seconds to read it out
 # this now sets the refresh rate for ADR py to be 3 seconds
 
 #create a resourcemanager and see what instruments the computer can talk to
 #path = os.path.normpath("C:/Program Files/IVI Foundation/VISA/Win64/Lib_x64/msc/visa64.lib")
 rm = visa.ResourceManager()
-print rm.list_resources()
+#print rm.list_resources()
 
 #form connections to the two lakeshore temperature, and one resistance devices available
 lk224 = rm.open_resource('GPIB1::12::INSTR') #lakeshore 224
@@ -40,7 +40,7 @@ ag47b = rm.open_resource('GPIB1::5::INSTR')
 ag49 = rm.open_resource('GPIB1::3::INSTR')
 
 #Sometimes Pressure Gauge doesn't fucntion, to turn on, set gauge=1
-gauge=0
+gauge=1
 
 # Connect to Pressure Gauge (900USB-1 @ COM7)
 if gauge==1:
