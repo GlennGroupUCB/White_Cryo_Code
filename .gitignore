@@ -54,3 +54,6 @@ Temporary Items
 # The python cache files
 __pycache__/
 \.vscode/
+
+# python compiled files
+*.pyc
